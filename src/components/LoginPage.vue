@@ -74,7 +74,7 @@ export default {
                 // 로그인 성공 후 처리 (예: 메인 페이지로 리다이렉트, 사용자 정보 저장)
                 alert("로그인 성공!");
                 // 예시: 라우터로 페이지 이동 (Vue Router 설정 필요)
-                // this.$router.push('/main');
+                this.$router.push('/photo'); // 로그인 성공 후 사진 업로드 페이지로 이동
             } catch (error) {
                 console.error(
                     "로그인 실패:",
@@ -90,10 +90,7 @@ export default {
             }
         },
         handleKakaoLogin() {
-            // 카카오 로그인 기능 구현 (별도의 OAuth2 연동 필요)
-            alert("카카오 로그인 기능은 별도로 구현해야 합니다.");
-            // 예: 카카오 로그인 Redirect URL로 이동
-            // window.location.href = 'https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=YOUR_KAKAO_APP_KEY&redirect_uri=YOUR_REDIRECT_URI';
+            window.location.href = "http://localhost:8080/oauth2/authorization/kakao";
         },
         goToSignUp() {
             // 회원가입 페이지로 이동 (Vue Router 설정 필요)
