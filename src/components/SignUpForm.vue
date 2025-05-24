@@ -105,6 +105,7 @@ export default {
             passwordLengthStatus: null, // { message: '', color: '' } // 비밀번호 길이 상태 추가
 
             passwordLengthTimer: null, // 비밀번호 길이 메시지 지연을 위한 타이머 ID
+            passwordMatchTimer: null,  // 비밀번호 일치 메시지 지연을 위한 타이머 ID (추가)
 
             baseUrl: 'http://localhost:8080/api', // 기본 API URL
 
@@ -130,8 +131,11 @@ export default {
         },
         canSubmit() {
             // 회원가입 버튼 활성화 조건
+            // usernameStatus가 존재하고 색상이 'green'일 때만 통과하도록 수정
+            const isUsernameValid = this.usernameStatus && this.usernameStatus.color === 'green';
+
             return (
-                this.form.username.trim() !== '' &&
+                isUsernameValid && // 아이디 중복 체크 통과 여부
                 this.isPasswordLengthValid && // 비밀번호 길이 유효성 추가
                 this.passwordsMatch && // 비밀번호 일치
                 this.form.password.length > 0 && // 비밀번호가 실제로 입력되었는지 확인
@@ -160,25 +164,22 @@ export default {
                 this.checkPasswordLength(); // 이 경우 메시지가 null로 설정됨
             }
             
-            this.checkPasswordMatch();  // 비밀번호 일치 여부 검사 (지연 없음)
+            this.checkPasswordMatch(); 
         },
         'form.confirmPassword': function() {
-        // 비밀번호 일치 여부 검사 로직에 지연 적용
-        // ✨ 변경: checkPasswordMatch() 호출 로직을 setTimeout으로 감싸기
-        if (this.passwordMatchTimer) {
-            clearTimeout(this.passwordMatchTimer);
-        }
-        this.passwordMatchStatus = null; // 즉시 메시지 초기화
+            if (this.passwordMatchTimer) {
+                clearTimeout(this.passwordMatchTimer);
+            }
+            this.passwordMatchStatus = null;
 
-        // 비밀번호 확인 필드에 입력이 있을 때만 지연 후 검사 실행
-        if (this.form.password.length > 0 || this.form.confirmPassword.length > 0) {
-            this.passwordMatchTimer = setTimeout(() => {
+            if (this.form.password.length > 0 || this.form.confirmPassword.length > 0) {
+                this.passwordMatchTimer = setTimeout(() => {
+                    this.checkPasswordMatch();
+                }, 500);
+            } else {
                 this.checkPasswordMatch();
-            }, 500); // 0.5초 지연
-        } else {
-            this.checkPasswordMatch(); // 둘 다 비어있을 때는 즉시 처리 (메시지 숨김)
+            }
         }
-    }
     },
     methods: {
         // 아이디 입력 시 상태 초기화
@@ -203,9 +204,9 @@ export default {
             } catch (error) {
                 console.error('아이디 중복 체크 실패:', error.response ? error.response.data : error.message);
                 if (error.response) {
-                    if (error.response.status === 409) { // 닉네임 중복 시
+                    if (error.response.status === 409) {
                         this.usernameStatus = { message: error.response.data.message, color: 'red' };
-                    } else if (error.response.status === 400) { // 다른 일반적인 IllegalArgumentException
+                    } else if (error.response.status === 400) {
                         this.usernameStatus = { message: error.response.data.message, color: 'red' };
                     } else {
                         this.usernameStatus = { message: '아이디 중복 체크 중 알 수 없는 오류가 발생했습니다.', color: 'red' };
@@ -218,11 +219,11 @@ export default {
             }
         },
 
-        // 비밀번호 길이 유효성 검사 (이제 이 함수는 watch 내부 setTimeout에서 호출됨)
+        // 비밀번호 길이 유효성 검사
         checkPasswordLength() {
             const len = this.form.password.length;
             if (len === 0) {
-                this.passwordLengthStatus = null; // 입력이 없으면 메시지 숨김
+                this.passwordLengthStatus = null;
             } else if (len < 8) {
                 this.passwordLengthStatus = { message: `비밀번호는 최소 8자 이상이어야 합니다. (현재 ${len}자)`, color: 'red' };
             } else if (len > 20) {
@@ -234,17 +235,14 @@ export default {
 
         // 비밀번호 일치 여부 확인
         checkPasswordMatch() {
-            // 두 필드 중 하나라도 비어있으면 메시지 숨김
-            if (this.form.password.length === 0 || this.form.confirmPassword.length === 0) {
+            if (this.form.password.length === 0 && this.form.confirmPassword.length === 0) {
                 this.passwordMatchStatus = null;
                 return;
             }
 
-            // 두 필드가 모두 채워져 있고 일치하는 경우
             if (this.form.password === this.form.confirmPassword) {
                 this.passwordMatchStatus = { message: '비밀번호가 일치합니다.', color: 'green' };
             } else {
-                // 두 필드가 모두 채워져 있지만 일치하지 않는 경우
                 this.passwordMatchStatus = { message: '비밀번호가 일치하지 않습니다.', color: 'red' };
             }
         },
@@ -258,19 +256,19 @@ export default {
             }
 
             this.isSendingCode = true;
-            this.isEmailVerified = false; // 재전송 시 인증 상태 초기화
-            this.stopEmailTimer(); // 기존 타이머 중지
+            this.isEmailVerified = false;
+            this.stopEmailTimer();
 
             try {
                 const response = await axios.post(`${this.baseUrl}/email`, {
                     email: this.form.email
                 });
-                alert('인증번호가 발송되었습니다: ' + response.data);
+                alert('인증번호가 발송되었습니다. 메일을 확인해주세요.');
                 this.showAuthCodeInput = true;
                 this.startEmailTimer();
             } catch (error) {
                 console.error('인증번호 발송 실패:', error.response ? error.response.data : error.message);
-                alert(error.response ? error.response.data : '인증번호 발송에 실패했습니다. 다시 시도해주세요.');
+                alert(error.response ? error.response.data.message || error.response.data : '인증번호 발송에 실패했습니다. 다시 시도해주세요.');
                 this.showAuthCodeInput = false;
             } finally {
                 this.isSendingCode = false;
@@ -318,12 +316,12 @@ export default {
                     email: this.form.email,
                     code: this.form.authCode
                 });
-                alert('인증번호 확인: ' + response.data);
+                alert('이메일이 성공적으로 인증되었습니다.');
                 this.isEmailVerified = true;
                 this.stopEmailTimer();
             } catch (error) {
                 console.error('인증번호 확인 실패:', error.response ? error.response.data : error.message);
-                alert(error.response ? error.response.data : '인증번호 확인에 실패했습니다.');
+                alert(error.response ? error.response.data.message || error.response.data : '인증번호 확인에 실패했습니다.');
                 this.isEmailVerified = false;
             } finally {
                 this.isVerifyingCode = false;
@@ -353,7 +351,7 @@ export default {
                 }
             } catch (error) {
                 console.error('회원가입 실패:', error.response ? error.response.data : error.message);
-                alert(error.response ? error.response.data : '회원가입 중 오류가 발생했습니다.');
+                alert(error.response ? error.response.data.message || error.response.data : '회원가입 중 오류가 발생했습니다.');
             } finally {
                 this.isSigningUp = false;
             }
@@ -362,15 +360,24 @@ export default {
     // 컴포넌트가 파괴될 때 타이머를 정리하여 메모리 누수 방지
     beforeUnmount() {
         this.stopEmailTimer();
-        if (this.passwordLengthTimer) { // 비밀번호 길이 타이머도 정리
+        if (this.passwordLengthTimer) {
             clearTimeout(this.passwordLengthTimer);
+        }
+        if (this.passwordMatchTimer) {
+            clearTimeout(this.passwordMatchTimer);
         }
     }
 };
 </script>
 
 <style>
-:root {
+/*
+ * 이 <style> 블록에는 'scoped' 속성이 없습니다.
+ * base.css에 전역적으로 정의된 CSS 변수를 사용하고,
+ * 폰트 로드와 body 기본 스타일은 base.css에서 담당하므로 여기서는 삭제합니다.
+ */
+/*
+:root { // base.css에 있으므로 삭제
     --main-color: #FF5D00;
     --light-bg: #f9f9f9;
     --text-color: #333;
@@ -379,21 +386,37 @@ export default {
     --focus-border-color: #FF7D33;
     --button-hover-color: #E65200;
 }
+*/
+
+/*
+body { // base.css에 있으므로 삭제
+    margin: 0;
+    font-family: 'Noto Sans KR', sans-serif;
+}
+*/
+
+/*
+@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;800&display=swap'); // base.css에 있으므로 삭제
+*/
 </style>
 
 <style scoped>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+    /*
+     * 이 <style scoped> 블록 내의 CSS는 오직 이 SignupForm 컴포넌트 내에서만 유효합니다.
+     * Vue의 스코프드 CSS 기능 덕분에 다른 컴포넌트에 영향을 주지 않습니다.
+     */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap'); /* Noto Sans KR 폰트 개별 컴포넌트에서 로드하는 경우 (전역으로 옮길 수 있음) */
 
     .signup-page-wrapper {
-        font-family: 'Noto Sans KR', sans-serif;
+        font-family: 'Noto Sans KR', sans-serif; /* Noto Sans KR 폰트 사용 */
         display: flex;
         justify-content: center;
         align-items: center;
-        min-height: 100vh;
-        margin: 0;
-        background-color: var(--light-bg);
-        color: var(--text-color);
-        overflow-y: auto;
+        min-height: 100vh; /* 뷰포트 전체 높이를 채움 */
+        width: 100vw; /* 뷰포트 전체 너비를 채움 */
+        background-color: var(--light-bg); /* 전역 변수 사용 */
+        color: var(--text-color); /* 전역 변수 사용 */
+        overflow-y: auto; /* 내용이 넘칠 경우 스크롤 허용 */
         padding: 20px;
         box-sizing: border-box;
     }
@@ -454,9 +477,9 @@ export default {
     .input-group input[type="text"],
     .input-group input[type="password"],
     .input-group input[type="email"] {
-        width: calc(100% - 24px); /* 100%에서 좌우 패딩을 뺀 너비 */
+        width: calc(100% - 24px);
         padding: 14px 12px;
-        border: 1px solid var(--border-color); /* #ddd */
+        border: 1px solid var(--border-color);
         border-radius: 6px;
         font-size: 17px;
         box-sizing: border-box;
@@ -465,7 +488,7 @@ export default {
     }
 
     .input-group input::placeholder {
-        color: var(--placeholder-color); /* #aaa */
+        color: var(--placeholder-color);
     }
 
     .input-group input[type="text"]:focus,
@@ -535,7 +558,7 @@ export default {
     .status-message {
         font-size: 14px;
         margin-top: 8px;
-        margin-left: 5px; /* 입력 필드와 간격 조절 */
+        margin-left: 5px;
         font-weight: bold;
     }
 
