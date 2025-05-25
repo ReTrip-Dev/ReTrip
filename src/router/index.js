@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
+import RetripReportGenerator from "../components/RetripReportGenerator.vue";
 import LoginPage from "../components/LoginPage.vue";
-import SignupForm from "../components/SignupForm.vue";
+import SignUpForm from "../components/SignUpForm.vue";
 
 const routes = [
   {
@@ -11,7 +12,12 @@ const routes = [
   {
     path: "/signup", // 회원가입 페이지 경로
     name: "Signup",
-    component: SignupForm, // SignupForm 컴포넌트 연결
+    component: SignUpForm, // SignUpForm 컴포넌트 연결
+  },
+  {
+    path: "/photo", // 회원가입 페이지 경로
+    name: "photo",
+    component: RetripReportGenerator, // SignupForm 컴포넌트 연결
   },
 ];
 
