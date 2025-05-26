@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import RetripReportGenerator from "../components/RetripReportGenerator.vue";
 import LoginPage from "../components/LoginPage.vue";
 import SignUpForm from "../components/SignUpForm.vue";
+import Credential from "../components/Credential.vue";
 
 const routes = [
   {
@@ -15,10 +16,15 @@ const routes = [
     component: SignUpForm, // SignUpForm 컴포넌트 연결
   },
   {
-    path: "/photo", // 회원가입 페이지 경로
+    path: "/photo", // 사진 업로드 페이지 경로
     name: "photo",
-    component: RetripReportGenerator, // SignupForm 컴포넌트 연결
+    component: RetripReportGenerator, // RetripReportGenerator 컴포넌트 연결
   },
+  {
+    path: "/credential", // 회원 아이디, 비밀번호 찾기 페이지 경로
+    name: "credential",
+    component: Credential, // Credential 컴포넌트 연결
+  }
 ];
 
 const router = createRouter({
