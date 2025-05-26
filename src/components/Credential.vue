@@ -187,6 +187,8 @@ export default {
                 console.log('아이디 찾기: 인증번호 확인 성공', response.data);
                 this.displayMessage('id', `회원님의 아이디는 <strong>${response.data}</strong> 입니다.`, false);
                 this.idForm.showAuthInput = false; // 인증 성공 후 인증번호 입력칸 숨김
+                // Add a button to navigate to the home screen
+                this.idForm.message += `<br><button style="background-color: #4090e9; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;" onclick="window.location.href='/'">홈으로 돌아가기</button>`;
             } catch (error) {
                 console.error('아이디 찾기: 인증번호 확인 실패', error.response ? error.response.data : error.message);
                 this.displayMessage('id', '인증번호가 올바르지 않습니다.', true);
@@ -261,6 +263,7 @@ export default {
                 this.displayMessage('pw', '비밀번호가 성공적으로 변경되었습니다.', false);
                 this.pwForm.showNewPasswordSection = false; // 변경 후 새 비밀번호 입력칸 숨김
                 this.resetForms(); // 폼 초기화
+                this.$router.push('/'); // 홈 화면으로 이동
             } catch (error) {
                 console.error('비밀번호 변경 실패', error.response ? error.response.data : error.message);
                 this.displayMessage('pw', '비밀번호 변경에 실패했습니다.', true);
