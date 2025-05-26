@@ -1122,9 +1122,9 @@ body {
     /* height: 16px; */
     vertical-align: middle;
     /* Font Awesome 스피너도 자체 애니메이션을 가지고 있으므로,
-       이 animation 속성은 제거하거나 필요에 따라 조절하세요.
-       여기서는 Font Awesome의 기본 애니메이션을 방해하지 않도록 제거합니다. */
-    /* animation: spin 1s linear infinite; */
+        이 animation 속성은 제거하거나 필요에 따라 조절하세요.
+        여기서는 Font Awesome의 기본 애니메이션을 방해하지 않도록 제거합니다. */
+    animation: spin 1s linear infinite;
 }
 
 .generate-button.loading .spinner {
@@ -1132,9 +1132,9 @@ body {
 }
 
 /* @keyframes spin은 Font Awesome 스피너의 기본 애니메이션과 겹칠 수 있으므로 제거하거나,
-   Font Awesome의 기본 애니메이션을 오버라이드할 때만 사용합니다.
+    Font Awesome의 기본 애니메이션을 오버라이드할 때만 사용합니다.
    여기서는 Font Awesome의 기본 스피너를 가정하고 제거합니다. */
-/*
+
 @keyframes spin {
     0% {
         transform: rotate(0deg);
@@ -1143,7 +1143,7 @@ body {
         transform: rotate(360deg);
     }
 }
-*/
+
 
 /* 푸터 */
 .subtle-text-element {
