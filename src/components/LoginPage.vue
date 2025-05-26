@@ -97,12 +97,12 @@ export default {
             this.$router.push("/signup");
         },
         goToFindId() {
-            alert("아이디 찾기 페이지로 이동합니다.");
-            // this.$router.push('/find-id');
+            // alert("아이디 찾기 페이지로 이동합니다.");
+            this.$router.push('/credential');
         },
         goToFindPassword() {
-            alert("비밀번호 찾기 페이지로 이동합니다.");
-            // this.$router.push('/find-password');
+            // alert("비밀번호 찾기 페이지로 이동합니다.");
+            this.$router.push('/credential');
         },
     },
 };
