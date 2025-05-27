@@ -3,6 +3,7 @@ import RetripReportGenerator from "../components/RetripReportGenerator.vue";
 import LoginPage from "../components/LoginPage.vue";
 import SignUpForm from "../components/SignUpForm.vue";
 import Credential from "../components/Credential.vue";
+import Retrip from "../components/Retrip.vue";
 
 const routes = [
   {
@@ -19,6 +20,11 @@ const routes = [
     path: "/photo", // 사진 업로드 페이지 경로
     name: "photo",
     component: RetripReportGenerator, // RetripReportGenerator 컴포넌트 연결
+  },
+  {
+    path: "/retrip", // 사진 업로드 페이지 경로
+    name: "retrip",
+    component: Retrip, // RetripReportGenerator 컴포넌트 연결
   },
   {
     path: "/credential", // 회원 아이디, 비밀번호 찾기 페이지 경로
