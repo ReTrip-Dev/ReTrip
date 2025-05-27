@@ -106,17 +106,15 @@
 </template>
 
 <script>
-// axios를 사용하여 HTTP 요청을 보내므로, 프로젝트에 axios가 설치되어 있어야 합니다.
-// npm install axios 또는 yarn add axios
-import axios from 'axios';
+import axios from 'axios'; // Import axios
 
 export default {
     name: 'PhotoUpload',
     data() {
         return {
             uploadedFiles: [],
-            maxFiles: 20, // UI에 표시된 최대 20장과 일치
-            minFiles: 5,   // UI에 표시된 최소 5장과 일치
+            maxFiles: 20,
+            minFiles: 5, // Minimum number of files required
             isDraggingOver: false,
             isGenerating: false,
         };
@@ -176,7 +174,7 @@ export default {
                 this.uploadedFiles.splice(indexToRemove, 1);
             }
         },
-        async generateReport() { // async 키워드 추가
+        async generateReport() { // Make the method async
             if (this.isGenerating) {
                 return;
             }
@@ -186,60 +184,54 @@ export default {
                 return;
             }
 
-            if (this.uploadedFiles.length < this.minFiles) { // 최소 파일 개수 확인
+            if (this.uploadedFiles.length < this.minFiles) {
                 alert(`최소 ${this.minFiles}장 이상의 이미지를 선택해주세요.`);
                 return;
             }
 
-            // maxFiles는 addFiles에서 이미 처리되므로 여기서는 중복 검사
-            // if (this.uploadedFiles.length > this.maxFiles) {
-            //     alert(`최대 ${this.maxFiles}장까지만 이미지를 선택할 수 있습니다.`);
-            //     return;
-            // }
+            if (this.uploadedFiles.length > this.maxFiles) {
+                alert(`최대 ${this.maxFiles}장까지만 이미지를 선택할 수 있습니다.`);
+                return;
+            }
 
             this.isGenerating = true;
 
             const formData = new FormData();
             this.uploadedFiles.forEach(file => {
-                // 백엔드의 @RequestParam("images")와 일치하도록 'images' 사용
-                formData.append('images', file);
+                formData.append('images', file); // Key 'images' as expected by backend
             });
-            // 백엔드의 @RequestParam(value = "dirName", defaultValue = "images")와 일치하도록 'dirName' 추가
-            // 기본값이 'images'이므로 필요 없으면 제거해도 됩니다.
-            formData.append('dirName', 'images');
-
 
             try {
                 const response = await axios.post('http://localhost:8080/api/images/uploads', formData, {
                     headers: {
-                        // FormData를 사용하면 axios가 자동으로 'multipart/form-data' 헤더를 올바르게 설정합니다.
-                        // 명시적으로 작성해도 무방하나, 없어도 대부분 잘 작동합니다.
                         'Content-Type': 'multipart/form-data'
                     }
                 });
 
-                alert('여행 리포트 생성이 완료되었습니다! 새로운 리포트를 확인해보세요.');
-                console.log('response', response.data); // 서버 응답 데이터 확인
-                this.resetUploadArea();
-            } catch (error) {
-                alert('여행 리포트 생성에 실패했습니다.');
-                console.error('Error uploading images:', error);
+                console.log('Report generation successful, server response:', response.data);
 
-                // 에러 발생 시 상세 정보 로깅 (CORS, 네트워크 에러 등)
+                // Navigate to Retrip.vue with the response data in history.state
+                this.$router.push({
+                    name: 'retrip', // Use route name for clarity if available
+                    // path: '/retrip', // Or path
+                    state: { reportData: response.data } // Pass data in history.state
+                });
+                
+                this.resetUploadArea();
+
+            } catch (error) {
+                alert('여행 리포트 생성에 실패했습니다. 다시 시도해주세요.');
+                console.error('Error uploading images:', error);
                 if (error.response) {
-                    // 서버 응답이 온 경우 (HTTP 상태 코드 4xx, 5xx)
                     console.error('Error response data:', error.response.data);
                     console.error('Error response status:', error.response.status);
-                    console.error('Error response headers:', error.response.headers);
                 } else if (error.request) {
-                    // 요청은 보내졌지만 응답을 받지 못한 경우 (네트워크 에러, CORS 등)
                     console.error('Error request:', error.request);
                 } else {
-                    // 요청 설정 중 문제 발생
                     console.error('Error message:', error.message);
                 }
             } finally {
-                this.isGenerating = false; // 성공/실패 여부와 관계없이 로딩 상태 해제
+                this.isGenerating = false;
             }
         },
         resetUploadArea() {

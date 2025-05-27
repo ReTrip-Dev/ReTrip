@@ -1,5 +1,14 @@
 <template>
   <div class="travel-summary-wrapper">
+    <header class="header">
+        <div class="logo-area">
+            <a href="/photo">
+                <img src="/src/assets/logo(1).png" alt="ReTrip Logo" class="retrip-logo-icon">
+            </a>
+        </div>
+        <a href="/history" class="nav-link">히스토리</a>
+    </header>
+
     <div class="travel-summary-card">
       <div class="card-header">
         <div class="background-flag" :style="headerFlagStyle"></div>
@@ -31,9 +40,9 @@
           <div class="stat-box">
             <strong class="stat-title">내가 애정하는 피사체 TOP3</strong>
             <div class="favorite-subjects">
-              <div v-for="(icon, index) in userData.favoriteSubjects" :key="index"
+              <div v-for="(subject, index) in userData.favoriteSubjects" :key="index"
                    class="subject-icon-wrapper">
-                {{ icon }}
+                {{ subject }} <!-- Displaying subject string directly -->
               </div>
             </div>
           </div>
@@ -78,54 +87,98 @@
 </template>
 
 <script setup>
-import { reactive, computed } from 'vue';
-import CountryFlag from './CountryFlag.vue';
+import { reactive, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+// CountryFlag import is present but CountryFlag component is not used in template.
+// If it's not needed, it can be removed. For now, I'll leave it as it was.
+import CountryFlag from './CountryFlag.vue'; 
 
 const userData = reactive({
-  username: '용밍범밍히히님',
-  countryFlag: '🇰🇷',
-  countryCode: 'KR', // ISO country code for South Korea
-  travelKeywords: ['#행복', '#화창', '#힐링'],
-  mbti: '#ENFP',
-  summaryLine: '활기차고_다양한경험 !',
-  favoriteSubjects: ['🏢', '🏞️', '🐶'],
-  favoritePhotoSpot: '서울 한강공원',
-  travelDistance: '총 42km',
-  favoritePhotoTime: '🌞 낮',
-  recommendations: [
-    '• 여의도 한강공원 (자전거, 유람선)',
-    '• 반포 한강공원 (세빛섬, 무지개분수)',
-    '• 뚝섬 한강공원 (수영장, 익스트림)',
-    '• 잠실 한강공원 (잠실철교, 롯데월드타워)',
-    '• 망원 한강공원 (망리단길, 캠핑)',
-  ],
-  tripDates: '2025.05.10 - 2025.05.15',
-  hashtag: '#ReTrip',
-  
-  // Enhanced properties with emojis removed
+  username: '여행자님',
+  countryCode: 'KR', 
+  travelKeywords: ['#여행'], // Will be overwritten by tripSummary.keywords
+  mbti: '#ISTJ', // Will be overwritten by user.mbti
+  summaryLine: '멋진 여행이었어요!', // Will be overwritten by tripSummary.summaryLine
+  favoriteSubjects: ['🏞️', '🍲', '🏙️'], // Will be overwritten by photoStats.favoriteSubjects
+  favoritePhotoSpot: '알 수 없음', // Will be overwritten by photoStats.favoritePhotoSpot
+  travelDistance: '0km', // Will be overwritten by travelStats.travelDistance
+  favoritePhotoTime: '알 수 없음', // Will be overwritten by photoStats.favoritePhotoTime
+  recommendations: ['새로운 곳을 탐험해보세요!'], // Will be overwritten by recommendations
+  tripDates: '미정', // Will be overwritten by tripSummary.tripDates
+  hashtag: '#ReTrip', // This field is not in the backend response, will keep default or can be removed if not used
+
   get enhancedKeywords() {
-    return [
-      '#행복', 
-      '#화창', 
-      '#힐링'
-    ];
+    // Ensure travelKeywords is an array before mapping
+    return Array.isArray(this.travelKeywords) ? this.travelKeywords.map(k => k.startsWith('#') ? k : `#${k}`) : [];
   },
-  
   get enhancedRecommendations() {
-    return [
-      '🚲 여의도 한강공원 (자전거, 유람선)',
-      '🌊 반포 한강공원 (세빛섬, 무지개분수)',
-      '🏊 뚝섬 한강공원 (수영장, 익스트림)',
-      '🌉 잠실 한강공원 (잠실철교, 롯데월드타워)',
-      '⛺ 망원 한강공원 (망리단길, 캠핑)',
-    ];
+    // Ensure recommendations is an array before mapping
+    return Array.isArray(this.recommendations) ? this.recommendations.map(r => {
+      // If r is already a formatted string from backend processing, use it.
+      // Otherwise, apply default formatting.
+      // The new backend structure for recommendations is an array of objects.
+      // This computed prop will operate on the transformed string array.
+      if (typeof r === 'string' && (r.startsWith('• ') || /^[✨🍜🛍️💫🚲🌊🏊🌉⛺]/.test(r))) {
+        return r;
+      } else if (typeof r === 'string') { // Fallback for other strings
+        return `• ${r}`;
+      }
+      return r; // Should ideally be a string by now
+    }) : [];
+  }
+});
+
+onMounted(() => {
+  // const route = useRoute(); // route object might still be useful for other things, but not for reportData here
+  if (history.state && history.state.reportData) {
+    try {
+      // Data is already an object, no need to JSON.parse if passed directly in state
+      const receivedData = history.state.reportData; 
+      console.log('Retrip.vue received raw data from history.state:', receivedData);
+
+      // Mapping from the new backend structure
+      if (receivedData.user) {
+        userData.username = receivedData.user.username || userData.username;
+        userData.countryCode = receivedData.user.countryCode || userData.countryCode;
+        userData.mbti = receivedData.user.mbti ? (receivedData.user.mbti.startsWith('#') ? receivedData.user.mbti : `#${receivedData.user.mbti}`) : userData.mbti;
+      }
+
+      if (receivedData.tripSummary) {
+        userData.summaryLine = receivedData.tripSummary.summaryLine || userData.summaryLine;
+        userData.travelKeywords = Array.isArray(receivedData.tripSummary.keywords) ? [...receivedData.tripSummary.keywords] : userData.travelKeywords;
+        userData.tripDates = receivedData.tripSummary.tripDates || userData.tripDates;
+      }
+
+      if (receivedData.photoStats) {
+        userData.favoriteSubjects = Array.isArray(receivedData.photoStats.favoriteSubjects) ? [...receivedData.photoStats.favoriteSubjects] : userData.favoriteSubjects;
+        userData.favoritePhotoSpot = receivedData.photoStats.favoritePhotoSpot || userData.favoritePhotoSpot;
+        userData.favoritePhotoTime = receivedData.photoStats.favoritePhotoTime || userData.favoritePhotoTime;
+      }
+
+      if (receivedData.travelStats) {
+        userData.travelDistance = receivedData.travelStats.travelDistance || userData.travelDistance;
+      }
+
+      if (Array.isArray(receivedData.recommendations)) {
+        userData.recommendations = receivedData.recommendations.map(rec => 
+          `${rec.emoji} ${rec.place}${rec.description ? ` (${rec.description})` : ''}`
+        );
+      }
+
+      console.log('Retrip.vue processed reportData:', userData);
+    } catch (error) {
+      console.error('Failed to process report data from history.state in Retrip.vue:', error);
+    }
+  } else {
+    console.log('Retrip.vue mounted without reportData in history.state. Using default data.');
   }
 });
 
 // Generate background flag style for header
 const headerFlagStyle = computed(() => {
+  const code = userData.countryCode && userData.countryCode.length === 2 ? userData.countryCode.toLowerCase() : 'kr';
   return {
-    backgroundImage: `url(https://flagcdn.com/w640/${userData.countryCode.toLowerCase()}.png)`
+    backgroundImage: `url(https://flagcdn.com/w640/${code}.png)`
   };
 });
 </script>
@@ -191,14 +244,85 @@ const headerFlagStyle = computed(() => {
 /* Base styles for the component's root element */
 .travel-summary-wrapper {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column; /* Ensure header and card are stacked */
+  align-items: center; /* Center the card horizontally */
   min-height: 100vh; /* full height */
   background-color: var(--color-background-light);
   padding: var(--spacing-5);
+  padding-top: 85px; /* Added padding for fixed header (65px header + 20px original padding) */
   box-sizing: border-box; /* Include padding in element's total width and height */
   font-family: 'Noto Sans KR', sans-serif; /* Apply font globally to this component */
 }
+
+/* Header styles copied from RetripReportGenerator.vue - ensure variables are accessible or defined */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 15px 20px;
+    box-sizing: border-box;
+    background-color: var(--white); /* Assuming --white is defined globally or in :root here */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000; /* Ensure header is above other content */
+    box-shadow: none;
+    border-radius: 0;
+    /* animation: fadeInDown 0.8s ease-out; */ /* Animation can be added if desired */
+}
+
+/*
+@keyframes fadeInDown {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+*/
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    color: var(--primary-orange); /* Assuming --primary-orange is defined */
+    height: 50px;
+}
+
+.logo-area a {
+    display: block;
+    width: auto;
+    height: 100%;
+    text-decoration: none;
+}
+
+.logo-area img.retrip-logo-icon { /* Be more specific if needed */
+    max-height: 100%;
+    width: auto;
+    display: block;
+}
+
+.nav-link {
+    color: var(--medium-gray); /* Assuming --medium-gray is defined */
+    text-decoration: none;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: var(--border-radius-button); /* Assuming --border-radius-button is defined */
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-size: 1em;
+    color: var(--primary-orange);
+    border: 2px solid var(--primary-orange);
+}
+
+.nav-link:hover {
+    background-color: var(--pale-orange); /* Assuming --pale-orange is defined */
+    color: var(--primary-orange);
+}
+
 
 /* Main card container */
 .travel-summary-card {
