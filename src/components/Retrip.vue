@@ -9,7 +9,7 @@
         <a href="/history" class="nav-link">히스토리</a>
     </header>
 
-    <div class="travel-summary-card">
+    <div class="travel-summary-card" ref="travelSummaryCard">
       <div class="card-header">
         <div class="background-flag" :style="headerFlagStyle"></div>
         <div class="header-content">✈️ 여행 Recap</div>
@@ -41,7 +41,7 @@
             <strong class="stat-title">내가 애정하는 피사체 TOP3</strong>
             <div class="favorite-subjects">
               <div v-for="(subject, index) in userData.favoriteSubjects" :key="index"
-                   class="subject-icon-wrapper">
+                    class="subject-icon-wrapper">
                 {{ subject }} <!-- Displaying subject string directly -->
               </div>
             </div>
@@ -83,15 +83,23 @@
         </div>
       </div>
     </div>
+
+    <div class="action-buttons-container">
+      <button @click="captureAndSaveImage" class="action-button save-button">
+        <i class="fas fa-save"></i> 이미지 저장
+      </button>
+      <button @click="captureAndShareImage" class="action-button share-button">
+        <i class="fas fa-share-alt"></i> 공유하기
+      </button>
+    </div>
+
   </div>
 </template>
 
 <script setup>
-import { reactive, computed, onMounted } from 'vue';
+import { reactive, computed, onMounted, ref } from 'vue'; // Added ref
 import { useRoute } from 'vue-router';
-// CountryFlag import is present but CountryFlag component is not used in template.
-// If it's not needed, it can be removed. For now, I'll leave it as it was.
-import CountryFlag from './CountryFlag.vue'; 
+import html2canvas from 'html2canvas'; // Import html2canvas
 
 const userData = reactive({
   username: '여행자님',
@@ -127,6 +135,8 @@ const userData = reactive({
     }) : [];
   }
 });
+
+const travelSummaryCard = ref(null); // Create a ref for the card element
 
 onMounted(() => {
   // const route = useRoute(); // route object might still be useful for other things, but not for reportData here
@@ -181,6 +191,76 @@ const headerFlagStyle = computed(() => {
     backgroundImage: `url(https://flagcdn.com/w640/${code}.png)`
   };
 });
+
+const captureAndSaveImage = async () => {
+  if (!travelSummaryCard.value) return;
+  try {
+    const canvas = await html2canvas(travelSummaryCard.value, {
+      useCORS: true, // Important for external images like flags
+      allowTaint: true, // May be needed for some external images
+      backgroundColor: null, // Preserve transparency or set a specific color
+      scale: 2, // Increase scale for better resolution
+    });
+    const image = canvas.toDataURL('image/png', 1.0);
+    const link = document.createElement('a');
+    link.href = image;
+    link.download = 'retrip-summary.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error('Error capturing image for save:', error);
+    alert('이미지 저장에 실패했습니다.');
+  }
+};
+
+const captureAndShareImage = async () => {
+  if (!travelSummaryCard.value) return;
+  try {
+    const canvas = await html2canvas(travelSummaryCard.value, {
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      scale: 2,
+    });
+    // For Web Share API, we need a Blob
+    canvas.toBlob(async (blob) => {
+      if (navigator.share && blob) {
+        const filesArray = [
+          new File([blob], 'retrip-summary.png', {
+            type: 'image/png',
+            lastModified: new Date().getTime(),
+          }),
+        ];
+        try {
+          await navigator.share({
+            title: '나의 ReTrip 여행 리포트',
+            text: '내 여행 리포트를 확인해보세요!',
+            files: filesArray,
+          });
+          console.log('Image shared successfully');
+        } catch (shareError) {
+          console.error('Error sharing image:', shareError);
+          // Fallback for when sharing fails (e.g., user cancels)
+          // Or if specific share targets are not available.
+          // alert('공유에 실패했습니다. 이미지를 먼저 저장한 후 공유해보세요.');
+        }
+      } else {
+        // Fallback if Web Share API is not supported
+        alert('브라우저가 공유 기능을 지원하지 않습니다. 이미지를 저장한 후 직접 공유해주세요.');
+        // Optionally, trigger download as a fallback
+        // const image = canvas.toDataURL('image/png', 1.0);
+        // const link = document.createElement('a');
+        // link.href = image;
+        // link.download = 'retrip-summary.png';
+        // link.click();
+      }
+    }, 'image/png');
+  } catch (error) {
+    console.error('Error capturing image for share:', error);
+    alert('공유 이미지 생성에 실패했습니다.');
+  }
+};
 </script>
 
 <style>
@@ -250,6 +330,8 @@ const headerFlagStyle = computed(() => {
   background-color: var(--color-background-light);
   padding: var(--spacing-5);
   padding-top: 85px; /* Added padding for fixed header (65px header + 20px original padding) */
+  /* Add padding-bottom to make space for action buttons */
+  padding-bottom: 100px; /* Adjust as needed */
   box-sizing: border-box; /* Include padding in element's total width and height */
   font-family: 'Noto Sans KR', sans-serif; /* Apply font globally to this component */
 }
@@ -321,6 +403,61 @@ const headerFlagStyle = computed(() => {
 .nav-link:hover {
     background-color: var(--pale-orange); /* Assuming --pale-orange is defined */
     color: var(--primary-orange);
+}
+
+
+.action-buttons-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px; /* Space between buttons */
+  margin-top: 20px; /* Space above the buttons */
+  width: 100%;
+  max-width: 448px; /* Align with the card's max-width */
+  padding: 0 var(--spacing-4); /* Consistent padding with card margins */
+  box-sizing: border-box;
+}
+
+.action-button {
+  flex-grow: 1; /* Allow buttons to share space */
+  padding: 12px 20px;
+  border: none;
+  border-radius: var(--border-radius-button);
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px; /* Space between icon and text */
+}
+
+.action-button .fas {
+  font-size: 1.1em;
+}
+
+.save-button {
+  background-color: var(--color-primary-orange);
+  color: var(--color-white);
+  box-shadow: 0 4px 10px rgba(255, 93, 0, 0.2);
+}
+
+.save-button:hover {
+  background-color: var(--light-orange); /* Assuming --light-orange is defined */
+  box-shadow: 0 6px 15px rgba(255, 93, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.share-button {
+  background-color: var(--color-blue-500); /* Using a blue color for share */
+  color: var(--color-white);
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+}
+
+.share-button:hover {
+  background-color: #2563EB; /* A slightly darker blue */
+  box-shadow: 0 6px 15px rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
 }
 
 
