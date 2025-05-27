@@ -6,7 +6,7 @@
                     <img src="/src/assets/logo(1).png" alt="ReTrip Logo" class="retrip-logo-icon">
                 </a>
             </div>
-            <a href="#" class="nav-link">히스토리</a>
+            <a href="/history" class="nav-link">히스토리</a>
         </header>
 
         <div class="container">
