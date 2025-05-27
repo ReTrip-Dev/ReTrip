@@ -1,6 +1,15 @@
 <template>
   <div class="travel-summary-wrapper">
-    <div class="travel-summary-card">
+    <header class="header">
+        <div class="logo-area">
+            <a href="/photo">
+                <img src="/src/assets/logo(1).png" alt="ReTrip Logo" class="retrip-logo-icon">
+            </a>
+        </div>
+        <a href="/history" class="nav-link">히스토리</a>
+    </header>
+
+    <div class="travel-summary-card" ref="travelSummaryCard">
       <div class="card-header">
         <div class="background-flag" :style="headerFlagStyle"></div>
         <div class="header-content">✈️ 여행 Recap</div>
@@ -31,9 +40,9 @@
           <div class="stat-box">
             <strong class="stat-title">내가 애정하는 피사체 TOP3</strong>
             <div class="favorite-subjects">
-              <div v-for="(icon, index) in userData.favoriteSubjects" :key="index"
-                   class="subject-icon-wrapper">
-                {{ icon }}
+              <div v-for="(subject, index) in userData.favoriteSubjects" :key="index"
+                    class="subject-icon-wrapper">
+                {{ subject }} <!-- Displaying subject string directly -->
               </div>
             </div>
           </div>
@@ -74,60 +83,184 @@
         </div>
       </div>
     </div>
+
+    <div class="action-buttons-container">
+      <button @click="captureAndSaveImage" class="action-button save-button">
+        <i class="fas fa-save"></i> 이미지 저장
+      </button>
+      <button @click="captureAndShareImage" class="action-button share-button">
+        <i class="fas fa-share-alt"></i> 공유하기
+      </button>
+    </div>
+
   </div>
 </template>
 
 <script setup>
-import { reactive, computed } from 'vue';
-import CountryFlag from './CountryFlag.vue';
+import { reactive, computed, onMounted, ref } from 'vue'; // Added ref
+import { useRoute } from 'vue-router';
+import html2canvas from 'html2canvas'; // Import html2canvas
 
 const userData = reactive({
-  username: '용밍범밍히히님',
-  countryFlag: '🇰🇷',
-  countryCode: 'KR', // ISO country code for South Korea
-  travelKeywords: ['#행복', '#화창', '#힐링'],
-  mbti: '#ENFP',
-  summaryLine: '활기차고_다양한경험 !',
-  favoriteSubjects: ['🏢', '🏞️', '🐶'],
-  favoritePhotoSpot: '서울 한강공원',
-  travelDistance: '총 42km',
-  favoritePhotoTime: '🌞 낮',
-  recommendations: [
-    '• 여의도 한강공원 (자전거, 유람선)',
-    '• 반포 한강공원 (세빛섬, 무지개분수)',
-    '• 뚝섬 한강공원 (수영장, 익스트림)',
-    '• 잠실 한강공원 (잠실철교, 롯데월드타워)',
-    '• 망원 한강공원 (망리단길, 캠핑)',
-  ],
-  tripDates: '2025.05.10 - 2025.05.15',
-  hashtag: '#ReTrip',
-  
-  // Enhanced properties with emojis removed
+  username: '여행자님',
+  countryCode: 'KR', 
+  travelKeywords: ['#여행'], // Will be overwritten by tripSummary.keywords
+  mbti: '#ISTJ', // Will be overwritten by user.mbti
+  summaryLine: '멋진 여행이었어요!', // Will be overwritten by tripSummary.summaryLine
+  favoriteSubjects: ['🏞️', '🍲', '🏙️'], // Will be overwritten by photoStats.favoriteSubjects
+  favoritePhotoSpot: '알 수 없음', // Will be overwritten by photoStats.favoritePhotoSpot
+  travelDistance: '0km', // Will be overwritten by travelStats.travelDistance
+  favoritePhotoTime: '알 수 없음', // Will be overwritten by photoStats.favoritePhotoTime
+  recommendations: ['새로운 곳을 탐험해보세요!'], // Will be overwritten by recommendations
+  tripDates: '미정', // Will be overwritten by tripSummary.tripDates
+  hashtag: '#ReTrip', // This field is not in the backend response, will keep default or can be removed if not used
+
   get enhancedKeywords() {
-    return [
-      '#행복', 
-      '#화창', 
-      '#힐링'
-    ];
+    // Ensure travelKeywords is an array before mapping
+    return Array.isArray(this.travelKeywords) ? this.travelKeywords.map(k => k.startsWith('#') ? k : `#${k}`) : [];
   },
-  
   get enhancedRecommendations() {
-    return [
-      '🚲 여의도 한강공원 (자전거, 유람선)',
-      '🌊 반포 한강공원 (세빛섬, 무지개분수)',
-      '🏊 뚝섬 한강공원 (수영장, 익스트림)',
-      '🌉 잠실 한강공원 (잠실철교, 롯데월드타워)',
-      '⛺ 망원 한강공원 (망리단길, 캠핑)',
-    ];
+    // Ensure recommendations is an array before mapping
+    return Array.isArray(this.recommendations) ? this.recommendations.map(r => {
+      // If r is already a formatted string from backend processing, use it.
+      // Otherwise, apply default formatting.
+      // The new backend structure for recommendations is an array of objects.
+      // This computed prop will operate on the transformed string array.
+      if (typeof r === 'string' && (r.startsWith('• ') || /^[✨🍜🛍️💫🚲🌊🏊🌉⛺]/.test(r))) {
+        return r;
+      } else if (typeof r === 'string') { // Fallback for other strings
+        return `• ${r}`;
+      }
+      return r; // Should ideally be a string by now
+    }) : [];
+  }
+});
+
+const travelSummaryCard = ref(null); // Create a ref for the card element
+
+onMounted(() => {
+  // const route = useRoute(); // route object might still be useful for other things, but not for reportData here
+  if (history.state && history.state.reportData) {
+    try {
+      // Data is already an object, no need to JSON.parse if passed directly in state
+      const receivedData = history.state.reportData; 
+      console.log('Retrip.vue received raw data from history.state:', receivedData);
+
+      // Mapping from the new backend structure
+      if (receivedData.user) {
+        userData.username = receivedData.user.username || userData.username;
+        userData.countryCode = receivedData.user.countryCode || userData.countryCode;
+        userData.mbti = receivedData.user.mbti ? (receivedData.user.mbti.startsWith('#') ? receivedData.user.mbti : `#${receivedData.user.mbti}`) : userData.mbti;
+      }
+
+      if (receivedData.tripSummary) {
+        userData.summaryLine = receivedData.tripSummary.summaryLine || userData.summaryLine;
+        userData.travelKeywords = Array.isArray(receivedData.tripSummary.keywords) ? [...receivedData.tripSummary.keywords] : userData.travelKeywords;
+        userData.tripDates = receivedData.tripSummary.tripDates || userData.tripDates;
+      }
+
+      if (receivedData.photoStats) {
+        userData.favoriteSubjects = Array.isArray(receivedData.photoStats.favoriteSubjects) ? [...receivedData.photoStats.favoriteSubjects] : userData.favoriteSubjects;
+        userData.favoritePhotoSpot = receivedData.photoStats.favoritePhotoSpot || userData.favoritePhotoSpot;
+        userData.favoritePhotoTime = receivedData.photoStats.favoritePhotoTime || userData.favoritePhotoTime;
+      }
+
+      if (receivedData.travelStats) {
+        userData.travelDistance = receivedData.travelStats.travelDistance || userData.travelDistance;
+      }
+
+      if (Array.isArray(receivedData.recommendations)) {
+        userData.recommendations = receivedData.recommendations.map(rec => 
+          `${rec.emoji} ${rec.place}${rec.description ? ` (${rec.description})` : ''}`
+        );
+      }
+
+      console.log('Retrip.vue processed reportData:', userData);
+    } catch (error) {
+      console.error('Failed to process report data from history.state in Retrip.vue:', error);
+    }
+  } else {
+    console.log('Retrip.vue mounted without reportData in history.state. Using default data.');
   }
 });
 
 // Generate background flag style for header
 const headerFlagStyle = computed(() => {
+  const code = userData.countryCode && userData.countryCode.length === 2 ? userData.countryCode.toLowerCase() : 'kr';
   return {
-    backgroundImage: `url(https://flagcdn.com/w640/${userData.countryCode.toLowerCase()}.png)`
+    backgroundImage: `url(https://flagcdn.com/w640/${code}.png)`
   };
 });
+
+const captureAndSaveImage = async () => {
+  if (!travelSummaryCard.value) return;
+  try {
+    const canvas = await html2canvas(travelSummaryCard.value, {
+      useCORS: true, // Important for external images like flags
+      allowTaint: true, // May be needed for some external images
+      backgroundColor: null, // Preserve transparency or set a specific color
+      scale: 2, // Increase scale for better resolution
+    });
+    const image = canvas.toDataURL('image/png', 1.0);
+    const link = document.createElement('a');
+    link.href = image;
+    link.download = 'retrip-summary.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error('Error capturing image for save:', error);
+    alert('이미지 저장에 실패했습니다.');
+  }
+};
+
+const captureAndShareImage = async () => {
+  if (!travelSummaryCard.value) return;
+  try {
+    const canvas = await html2canvas(travelSummaryCard.value, {
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      scale: 2,
+    });
+    // For Web Share API, we need a Blob
+    canvas.toBlob(async (blob) => {
+      if (navigator.share && blob) {
+        const filesArray = [
+          new File([blob], 'retrip-summary.png', {
+            type: 'image/png',
+            lastModified: new Date().getTime(),
+          }),
+        ];
+        try {
+          await navigator.share({
+            title: '나의 ReTrip 여행 리포트',
+            text: '내 여행 리포트를 확인해보세요!',
+            files: filesArray,
+          });
+          console.log('Image shared successfully');
+        } catch (shareError) {
+          console.error('Error sharing image:', shareError);
+          // Fallback for when sharing fails (e.g., user cancels)
+          // Or if specific share targets are not available.
+          // alert('공유에 실패했습니다. 이미지를 먼저 저장한 후 공유해보세요.');
+        }
+      } else {
+        // Fallback if Web Share API is not supported
+        alert('브라우저가 공유 기능을 지원하지 않습니다. 이미지를 저장한 후 직접 공유해주세요.');
+        // Optionally, trigger download as a fallback
+        // const image = canvas.toDataURL('image/png', 1.0);
+        // const link = document.createElement('a');
+        // link.href = image;
+        // link.download = 'retrip-summary.png';
+        // link.click();
+      }
+    }, 'image/png');
+  } catch (error) {
+    console.error('Error capturing image for share:', error);
+    alert('공유 이미지 생성에 실패했습니다.');
+  }
+};
 </script>
 
 <style>
@@ -191,14 +324,142 @@ const headerFlagStyle = computed(() => {
 /* Base styles for the component's root element */
 .travel-summary-wrapper {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column; /* Ensure header and card are stacked */
+  align-items: center; /* Center the card horizontally */
   min-height: 100vh; /* full height */
   background-color: var(--color-background-light);
   padding: var(--spacing-5);
+  padding-top: 85px; /* Added padding for fixed header (65px header + 20px original padding) */
+  /* Add padding-bottom to make space for action buttons */
+  padding-bottom: 100px; /* Adjust as needed */
   box-sizing: border-box; /* Include padding in element's total width and height */
   font-family: 'Noto Sans KR', sans-serif; /* Apply font globally to this component */
 }
+
+/* Header styles copied from RetripReportGenerator.vue - ensure variables are accessible or defined */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 15px 20px;
+    box-sizing: border-box;
+    background-color: var(--white); /* Assuming --white is defined globally or in :root here */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000; /* Ensure header is above other content */
+    box-shadow: none;
+    border-radius: 0;
+    /* animation: fadeInDown 0.8s ease-out; */ /* Animation can be added if desired */
+}
+
+/*
+@keyframes fadeInDown {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+*/
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    color: var(--primary-orange); /* Assuming --primary-orange is defined */
+    height: 50px;
+}
+
+.logo-area a {
+    display: block;
+    width: auto;
+    height: 100%;
+    text-decoration: none;
+}
+
+.logo-area img.retrip-logo-icon { /* Be more specific if needed */
+    max-height: 100%;
+    width: auto;
+    display: block;
+}
+
+.nav-link {
+    color: var(--medium-gray); /* Assuming --medium-gray is defined */
+    text-decoration: none;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: var(--border-radius-button); /* Assuming --border-radius-button is defined */
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-size: 1em;
+    color: var(--primary-orange);
+    border: 2px solid var(--primary-orange);
+}
+
+.nav-link:hover {
+    background-color: var(--pale-orange); /* Assuming --pale-orange is defined */
+    color: var(--primary-orange);
+}
+
+
+.action-buttons-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px; /* Space between buttons */
+  margin-top: 20px; /* Space above the buttons */
+  width: 100%;
+  max-width: 448px; /* Align with the card's max-width */
+  padding: 0 var(--spacing-4); /* Consistent padding with card margins */
+  box-sizing: border-box;
+}
+
+.action-button {
+  flex-grow: 1; /* Allow buttons to share space */
+  padding: 12px 20px;
+  border: none;
+  border-radius: var(--border-radius-button);
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px; /* Space between icon and text */
+}
+
+.action-button .fas {
+  font-size: 1.1em;
+}
+
+.save-button {
+  background-color: var(--color-primary-orange);
+  color: var(--color-white);
+  box-shadow: 0 4px 10px rgba(255, 93, 0, 0.2);
+}
+
+.save-button:hover {
+  background-color: var(--light-orange); /* Assuming --light-orange is defined */
+  box-shadow: 0 6px 15px rgba(255, 93, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.share-button {
+  background-color: var(--color-blue-500); /* Using a blue color for share */
+  color: var(--color-white);
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+}
+
+.share-button:hover {
+  background-color: #2563EB; /* A slightly darker blue */
+  box-shadow: 0 6px 15px rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+}
+
 
 /* Main card container */
 .travel-summary-card {
