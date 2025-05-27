@@ -1,12 +1,12 @@
 <template>
   <div class="travel-summary-wrapper">
     <header class="header">
-        <div class="logo-area">
-            <a href="/photo">
-                <img src="/src/assets/logo(1).png" alt="ReTrip Logo" class="retrip-logo-icon">
-            </a>
-        </div>
-        <a href="/history" class="nav-link">히스토리</a>
+      <div class="logo-area">
+        <a href="/photo">
+          <img src="/src/assets/logo(1).png" alt="ReTrip Logo" class="retrip-logo-icon">
+        </a>
+      </div>
+      <a href="/history" class="nav-link">히스토리</a>
     </header>
 
     <div class="travel-summary-card" ref="travelSummaryCard">
@@ -20,12 +20,11 @@
           <span class="username-tag">
             {{ userData.username }}
           </span>
-          <!-- Improved flag tag display -->
         </div>
         <div class="keywords-mbti-row">
           <span class="keywords-tag">
             <span v-for="(keyword, idx) in userData.enhancedKeywords" :key="idx">
-              {{ keyword }} 
+              {{ keyword }}
             </span>
           </span>
           <span class="mbti-tag">
@@ -40,10 +39,8 @@
           <div class="stat-box">
             <strong class="stat-title">내가 애정하는 피사체 TOP3</strong>
             <div class="favorite-subjects">
-              <div v-for="(subject, index) in userData.favoriteSubjects" :key="index"
-                    class="subject-icon-wrapper">
-                {{ subject }} <!-- Displaying subject string directly -->
-              </div>
+              <div v-for="(subject, index) in userData.favoriteSubjects" :key="index" class="subject-icon-wrapper">
+                {{ subject }} </div>
             </div>
           </div>
 
@@ -68,7 +65,8 @@
           <div class="stat-box span-two-columns">
             <strong class="stat-title">💫 못가봤다면 여기는 어때요?!</strong>
             <ul class="recommendation-list">
-              <li v-for="(item, index) in userData.enhancedRecommendations" :key="index" class="recommendation-item">{{ item }}</li>
+              <li v-for="(item, index) in userData.enhancedRecommendations" :key="index" class="recommendation-item">{{
+                item }}</li>
             </ul>
           </div>
         </div>
@@ -97,56 +95,146 @@
 </template>
 
 <script setup>
-import { reactive, computed, onMounted, ref } from 'vue'; // Added ref
-import { useRoute } from 'vue-router';
-import html2canvas from 'html2canvas'; // Import html2canvas
+import { reactive, computed, onMounted, ref, nextTick } from 'vue';
+import html2canvas from 'html2canvas';
 
 const userData = reactive({
   username: '여행자님',
-  countryCode: 'KR', 
-  travelKeywords: ['#여행'], // Will be overwritten by tripSummary.keywords
-  mbti: '#ISTJ', // Will be overwritten by user.mbti
-  summaryLine: '멋진 여행이었어요!', // Will be overwritten by tripSummary.summaryLine
-  favoriteSubjects: ['🏞️', '🍲', '🏙️'], // Will be overwritten by photoStats.favoriteSubjects
-  favoritePhotoSpot: '알 수 없음', // Will be overwritten by photoStats.favoritePhotoSpot
-  travelDistance: '0km', // Will be overwritten by travelStats.travelDistance
-  favoritePhotoTime: '알 수 없음', // Will be overwritten by photoStats.favoritePhotoTime
-  recommendations: ['새로운 곳을 탐험해보세요!'], // Will be overwritten by recommendations
-  tripDates: '미정', // Will be overwritten by tripSummary.tripDates
-  hashtag: '#ReTrip', // This field is not in the backend response, will keep default or can be removed if not used
+  countryCode: 'KR',
+  travelKeywords: ['#여행'],
+  mbti: '#ISTJ',
+  summaryLine: '멋진 여행이었어요!',
+  favoriteSubjects: ['🏞️', '🍲', '🏙️'],
+  favoritePhotoSpot: '알 수 없음',
+  travelDistance: '0km',
+  favoritePhotoTime: '알 수 없음',
+  recommendations: ['새로운 곳을 탐험해보세요!'],
+  tripDates: '미정',
+  hashtag: '#ReTrip',
 
   get enhancedKeywords() {
-    // Ensure travelKeywords is an array before mapping
     return Array.isArray(this.travelKeywords) ? this.travelKeywords.map(k => k.startsWith('#') ? k : `#${k}`) : [];
   },
   get enhancedRecommendations() {
-    // Ensure recommendations is an array before mapping
     return Array.isArray(this.recommendations) ? this.recommendations.map(r => {
-      // If r is already a formatted string from backend processing, use it.
-      // Otherwise, apply default formatting.
-      // The new backend structure for recommendations is an array of objects.
-      // This computed prop will operate on the transformed string array.
       if (typeof r === 'string' && (r.startsWith('• ') || /^[✨🍜🛍️💫🚲🌊🏊🌉⛺]/.test(r))) {
         return r;
-      } else if (typeof r === 'string') { // Fallback for other strings
+      } else if (typeof r === 'string') {
         return `• ${r}`;
       }
-      return r; // Should ideally be a string by now
+      return r;
     }) : [];
   }
 });
 
-const travelSummaryCard = ref(null); // Create a ref for the card element
+const travelSummaryCard = ref(null);
 
-onMounted(() => {
-  // const route = useRoute(); // route object might still be useful for other things, but not for reportData here
+const headerFlagStyle = computed(() => {
+  const code = userData.countryCode && userData.countryCode.length === 2 ? userData.countryCode.toLowerCase() : 'kr';
+  return {
+    backgroundImage: `url(https://flagcdn.com/w640/${code}.png)`
+  };
+});
+
+/**
+ * HTML 요소를 캡처하여 Blob 형태로 변환 후 백엔드로 전송합니다.
+ * @param {string} retripId - 현재 여행 리포트의 고유 ID (백엔드에서 이미지와 리포트 연결용)
+ */
+const saveReportImage = async (retripId) => {
+  if (!travelSummaryCard.value) {
+    console.error("여행 요약 카드를 찾을 수 없습니다. HTML 요소가 아직 렌더링되지 않았을 수 있습니다.");
+    alert("이미지 캡처 준비 실패: 카드 요소를 찾을 수 없습니다.");
+    return;
+  }
+
+  if (!retripId) {
+    console.error("retripId가 제공되지 않았습니다. 이미지를 저장할 리포트를 식별할 수 없습니다.");
+    alert("이미지 저장 실패: 리포트 ID가 없습니다.");
+    return;
+  }
+
+  try {
+    const canvas = await html2canvas(travelSummaryCard.value, {
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      scale: 2,
+    });
+
+    canvas.toBlob(async (blob) => {
+      if (blob) {
+        const formData = new FormData();
+        const fileName = `retrip-summary-${retripId}.png`;
+        formData.append('image', blob, fileName);
+        formData.append('retripId', retripId);
+
+        console.log('FormData 준비 완료. 내용 확인:');
+        for (let pair of formData.entries()) {
+          console.log(pair[0] + ': ' + pair[1]);
+        }
+
+        try {
+          console.log(`이미지를 백엔드에 업로드 중: http://localhost:8080/api/images/retrip (retripId: ${retripId})`);
+          const response = await fetch('http://localhost:8080/api/images/retrip', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (response.ok) { // HTTP 상태 코드가 200번대인 경우
+            // 백엔드에서 "success" 문자열을 반환하므로, .text()로 응답을 받습니다.
+            const resultText = await response.text();
+            console.log('이미지 S3 업로드 응답:', resultText);
+
+            // "success" 문자열인지 확인하여 성공 메시지 표시
+            if (resultText === "success") {
+              alert('여행 리포트 이미지가 성공적으로 저장되었습니다!');
+            } else {
+              // "success"가 아닌 다른 문자열이 왔을 경우
+              console.error('이미지 S3 업로드 성공 응답이지만, 예상치 못한 문자열 반환:', resultText);
+              alert(`이미지 업로드 성공: 예상치 못한 서버 응답 - ${resultText}`);
+            }
+
+          } else { // HTTP 상태 코드가 200번대가 아닌 경우 (예: 400, 500)
+            const errorText = await response.text(); // 에러 응답 본문도 텍스트로 가져옴
+            console.error(`이미지 S3 업로드 실패: 상태 ${response.status}, 상태 메시지: ${response.statusText}, 응답 본문: ${errorText}`);
+            alert(`이미지 업로드 실패: ${response.status} - ${errorText}`);
+          }
+        } catch (fetchError) {
+          // 네트워크 오류, CORS 차단 등 Fetch 자체의 실패 시
+          console.error('이미지 업로드 중 네트워크 또는 서버 통신 에러:', fetchError);
+          alert('이미지 업로드 중 네트워크 오류가 발생했습니다. 개발자 콘솔을 확인해주세요.');
+        }
+      } else {
+        console.error('Blob 생성 실패: canvas.toBlob()이 실패했습니다.');
+        alert('이미지 생성에 실패했습니다. 카드 내용이 제대로 렌더링되었는지 확인해주세요.');
+      }
+    }, 'image/png');
+
+  } catch (canvasError) {
+    console.error('이미지 캡처 중 에러:', canvasError);
+    alert('이미지 캡처에 실패했습니다. 브라우저 콘솔을 확인해주세요.');
+  }
+};
+
+onMounted(async () => {
+  let currentRetripId = null;
+
   if (history.state && history.state.reportData) {
     try {
-      // Data is already an object, no need to JSON.parse if passed directly in state
-      const receivedData = history.state.reportData; 
-      console.log('Retrip.vue received raw data from history.state:', receivedData);
+      const receivedData = history.state.reportData;
+      console.log('Retrip.vue: history.state로부터 받은 원본 데이터:', receivedData);
 
-      // Mapping from the new backend structure
+      if (receivedData.retripId) {
+        currentRetripId = receivedData.retripId;
+      } else if (receivedData.reportId) {
+        console.warn('Retrip.vue: reportId 필드가 사용되었습니다. 백엔드에서 retripId를 사용하도록 업데이트하세요.');
+        currentRetripId = receivedData.reportId;
+      } else if (receivedData.tripSummary && receivedData.tripSummary.reportId) {
+        console.warn('Retrip.vue: tripSummary.reportId 필드가 사용되었습니다. 백엔드에서 retripId를 사용하도록 업데이트하세요.');
+        currentRetripId = receivedData.tripSummary.reportId;
+      }
+
+      // userData 업데이트 로직은 기존과 동일
       if (receivedData.user) {
         userData.username = receivedData.user.username || userData.username;
         userData.countryCode = receivedData.user.countryCode || userData.countryCode;
@@ -170,36 +258,42 @@ onMounted(() => {
       }
 
       if (Array.isArray(receivedData.recommendations)) {
-        userData.recommendations = receivedData.recommendations.map(rec => 
+        userData.recommendations = receivedData.recommendations.map(rec =>
           `${rec.emoji} ${rec.place}${rec.description ? ` (${rec.description})` : ''}`
         );
       }
 
-      console.log('Retrip.vue processed reportData:', userData);
+      console.log('Retrip.vue: 처리된 reportData:', userData);
+      console.log('Retrip.vue: 추출된 retripId:', currentRetripId);
+
+      await nextTick();
+      if (currentRetripId) {
+        console.log('Retrip.vue: retripId가 있어 이미지 저장 시도:', currentRetripId);
+        await saveReportImage(currentRetripId);
+      } else {
+        console.warn('Retrip.vue: retripId를 찾을 수 없어 Retrip 결과 이미지를 자동으로 저장하지 않습니다.');
+        alert('리포트 ID를 찾을 수 없어 이미지를 자동으로 저장하지 못했습니다.');
+      }
+
     } catch (error) {
-      console.error('Failed to process report data from history.state in Retrip.vue:', error);
+      console.error('Retrip.vue: history.state에서 리포트 데이터 처리 중 에러 발생:', error);
+      alert('여행 리포트 데이터를 불러오는 데 실패했습니다.');
     }
   } else {
-    console.log('Retrip.vue mounted without reportData in history.state. Using default data.');
+    console.log('Retrip.vue: history.state에 reportData가 없어 기본 데이터를 사용합니다.');
+    alert('이전 페이지에서 전달된 리포트 데이터가 없습니다. 기본 데이터를 표시합니다.');
   }
 });
 
-// Generate background flag style for header
-const headerFlagStyle = computed(() => {
-  const code = userData.countryCode && userData.countryCode.length === 2 ? userData.countryCode.toLowerCase() : 'kr';
-  return {
-    backgroundImage: `url(https://flagcdn.com/w640/${code}.png)`
-  };
-});
-
+// 기존의 "이미지 저장" 버튼 클릭 시 동작 (사용자 다운로드)
 const captureAndSaveImage = async () => {
   if (!travelSummaryCard.value) return;
   try {
     const canvas = await html2canvas(travelSummaryCard.value, {
-      useCORS: true, // Important for external images like flags
-      allowTaint: true, // May be needed for some external images
-      backgroundColor: null, // Preserve transparency or set a specific color
-      scale: 2, // Increase scale for better resolution
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      scale: 2,
     });
     const image = canvas.toDataURL('image/png', 1.0);
     const link = document.createElement('a');
@@ -214,6 +308,7 @@ const captureAndSaveImage = async () => {
   }
 };
 
+// 기존의 "공유하기" 버튼 클릭 시 동작 (웹 공유 API)
 const captureAndShareImage = async () => {
   if (!travelSummaryCard.value) return;
   try {
@@ -223,7 +318,6 @@ const captureAndShareImage = async () => {
       backgroundColor: null,
       scale: 2,
     });
-    // For Web Share API, we need a Blob
     canvas.toBlob(async (blob) => {
       if (navigator.share && blob) {
         const filesArray = [
@@ -241,19 +335,9 @@ const captureAndShareImage = async () => {
           console.log('Image shared successfully');
         } catch (shareError) {
           console.error('Error sharing image:', shareError);
-          // Fallback for when sharing fails (e.g., user cancels)
-          // Or if specific share targets are not available.
-          // alert('공유에 실패했습니다. 이미지를 먼저 저장한 후 공유해보세요.');
         }
       } else {
-        // Fallback if Web Share API is not supported
         alert('브라우저가 공유 기능을 지원하지 않습니다. 이미지를 저장한 후 직접 공유해주세요.');
-        // Optionally, trigger download as a fallback
-        // const image = canvas.toDataURL('image/png', 1.0);
-        // const link = document.createElement('a');
-        // link.href = image;
-        // link.download = 'retrip-summary.png';
-        // link.click();
       }
     }, 'image/png');
   } catch (error) {
@@ -264,6 +348,7 @@ const captureAndShareImage = async () => {
 </script>
 
 <style>
+/* ... (기존 스타일 코드 유지) ... */
 /* Google Fonts import for Noto Sans KR */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
 
@@ -277,11 +362,16 @@ const captureAndShareImage = async () => {
   --color-dark-gray: #333333;
   --color-medium-gray: #666666;
   --color-light-gray: #EEEEEE;
-  --color-blue-100: #E0F2F7; /* Approximate for Tailwind's blue-100 */
-  --color-blue-800: #1E40AF; /* Approximate for Tailwind's blue-800 */
-  --color-gray-50: #F9FAFB; /* Approximate for Tailwind's gray-50 */
-  --color-gray-200: #E5E7EB; /* Approximate for Tailwind's gray-200 */
-  --color-blue-500: #3B82F6; /* Approximate for Tailwind's blue-500 */
+  --color-blue-100: #E0F2F7;
+  /* Approximate for Tailwind's blue-100 */
+  --color-blue-800: #1E40AF;
+  /* Approximate for Tailwind's blue-800 */
+  --color-gray-50: #F9FAFB;
+  /* Approximate for Tailwind's gray-50 */
+  --color-gray-200: #E5E7EB;
+  /* Approximate for Tailwind's gray-200 */
+  --color-blue-500: #3B82F6;
+  /* Approximate for Tailwind's blue-500 */
 
   /* Spacing */
   --spacing-1: 4px;
@@ -305,13 +395,20 @@ const captureAndShareImage = async () => {
   --border-radius-full: 9999px;
 
   /* Font Sizes */
-  --font-size-xs: 0.75rem; /* 12px */
-  --font-size-sm: 0.875rem; /* 14px */
-  --font-size-base: 1rem; /* 16px */
-  --font-size-lg: 1.125rem; /* 18px */
-  --font-size-xl: 1.25rem; /* 20px */
-  --font-size-2xl: 1.5rem; /* 24px */
-  --font-size-3xl: 1.875rem; /* 30px */
+  --font-size-xs: 0.75rem;
+  /* 12px */
+  --font-size-sm: 0.875rem;
+  /* 14px */
+  --font-size-base: 1rem;
+  /* 16px */
+  --font-size-lg: 1.125rem;
+  /* 18px */
+  --font-size-xl: 1.25rem;
+  /* 20px */
+  --font-size-2xl: 1.5rem;
+  /* 24px */
+  --font-size-3xl: 1.875rem;
+  /* 30px */
 
   /* Font Weights */
   --font-weight-normal: 400;
@@ -324,101 +421,94 @@ const captureAndShareImage = async () => {
 /* Base styles for the component's root element */
 .travel-summary-wrapper {
   display: flex;
-  flex-direction: column; /* Ensure header and card are stacked */
-  align-items: center; /* Center the card horizontally */
-  min-height: 100vh; /* full height */
+  flex-direction: column;
+  /* Ensure header and card are stacked */
+  align-items: center;
+  /* Center the card horizontally */
+  min-height: 100vh;
+  /* full height */
   background-color: var(--color-background-light);
   padding: var(--spacing-5);
-  padding-top: 85px; /* Added padding for fixed header (65px header + 20px original padding) */
+  padding-top: 85px;
+  /* Added padding for fixed header (65px header + 20px original padding) */
   /* Add padding-bottom to make space for action buttons */
-  padding-bottom: 100px; /* Adjust as needed */
-  box-sizing: border-box; /* Include padding in element's total width and height */
-  font-family: 'Noto Sans KR', sans-serif; /* Apply font globally to this component */
+  padding-bottom: 100px;
+  /* Adjust as needed */
+  box-sizing: border-box;
+  /* Include padding in element's total width and height */
+  font-family: 'Noto Sans KR', sans-serif;
+  /* Apply font globally to this component */
 }
 
 /* Header styles copied from RetripReportGenerator.vue - ensure variables are accessible or defined */
 .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    padding: 15px 20px;
-    box-sizing: border-box;
-    background-color: var(--white); /* Assuming --white is defined globally or in :root here */
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000; /* Ensure header is above other content */
-    box-shadow: none;
-    border-radius: 0;
-    /* animation: fadeInDown 0.8s ease-out; */ /* Animation can be added if desired */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 15px 20px;
+  box-sizing: border-box;
+  background-color: var(--white);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  box-shadow: none;
+  border-radius: 0;
 }
-
-/*
-@keyframes fadeInDown {
-    0% {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-*/
 
 .logo-area {
-    display: flex;
-    align-items: center;
-    color: var(--primary-orange); /* Assuming --primary-orange is defined */
-    height: 50px;
+  display: flex;
+  align-items: center;
+  color: var(--primary-orange);
+  height: 50px;
 }
 
 .logo-area a {
-    display: block;
-    width: auto;
-    height: 100%;
-    text-decoration: none;
+  display: block;
+  width: auto;
+  height: 100%;
+  text-decoration: none;
 }
 
-.logo-area img.retrip-logo-icon { /* Be more specific if needed */
-    max-height: 100%;
-    width: auto;
-    display: block;
+.logo-area img.retrip-logo-icon {
+  max-height: 100%;
+  width: auto;
+  display: block;
 }
 
 .nav-link {
-    color: var(--medium-gray); /* Assuming --medium-gray is defined */
-    text-decoration: none;
-    font-weight: 500;
-    padding: 8px 12px;
-    border-radius: var(--border-radius-button); /* Assuming --border-radius-button is defined */
-    transition: background-color 0.3s ease, color 0.3s ease;
-    font-size: 1em;
-    color: var(--primary-orange);
-    border: 2px solid var(--primary-orange);
+  color: var(--medium-gray);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: var(--border-radius-button);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-size: 1em;
+  color: var(--primary-orange);
+  border: 2px solid var(--primary-orange);
 }
 
 .nav-link:hover {
-    background-color: var(--pale-orange); /* Assuming --pale-orange is defined */
-    color: var(--primary-orange);
+  background-color: var(--pale-orange);
+  color: var(--primary-orange);
 }
 
 
 .action-buttons-container {
   display: flex;
   justify-content: center;
-  gap: 20px; /* Space between buttons */
-  margin-top: 20px; /* Space above the buttons */
+  gap: 20px;
+  margin-top: 20px;
   width: 100%;
-  max-width: 448px; /* Align with the card's max-width */
-  padding: 0 var(--spacing-4); /* Consistent padding with card margins */
+  max-width: 448px;
+  padding: 0 var(--spacing-4);
   box-sizing: border-box;
 }
 
 .action-button {
-  flex-grow: 1; /* Allow buttons to share space */
+  flex-grow: 1;
   padding: 12px 20px;
   border: none;
   border-radius: var(--border-radius-button);
@@ -429,7 +519,7 @@ const captureAndShareImage = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px; /* Space between icon and text */
+  gap: 8px;
 }
 
 .action-button .fas {
@@ -443,19 +533,19 @@ const captureAndShareImage = async () => {
 }
 
 .save-button:hover {
-  background-color: var(--light-orange); /* Assuming --light-orange is defined */
+  background-color: var(--light-orange);
   box-shadow: 0 6px 15px rgba(255, 93, 0, 0.3);
   transform: translateY(-2px);
 }
 
 .share-button {
-  background-color: var(--color-blue-500); /* Using a blue color for share */
+  background-color: var(--color-blue-500);
   color: var(--color-white);
   box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
 }
 
 .share-button:hover {
-  background-color: #2563EB; /* A slightly darker blue */
+  background-color: #2563EB;
   box-shadow: 0 6px 15px rgba(59, 130, 246, 0.3);
   transform: translateY(-2px);
 }
@@ -464,10 +554,10 @@ const captureAndShareImage = async () => {
 /* Main card container */
 .travel-summary-card {
   width: 100%;
-  max-width: 448px; /* Tailwind's max-w-md (500px - 2*20px padding) */
+  max-width: 448px;
   background-color: var(--color-white);
   border-radius: var(--border-radius-3xl);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Tailwind's shadow-xl */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   text-align: center;
   position: relative;
@@ -476,8 +566,7 @@ const captureAndShareImage = async () => {
 
 /* Header section with "여행 Recap" */
 .card-header {
-  /* Removed background-color: var(--color-primary-orange); */
-  background-color: transparent; /* Make background transparent */
+  background-color: transparent;
   padding-top: var(--spacing-8);
   padding-bottom: var(--spacing-16);
   color: var(--color-white);
@@ -486,7 +575,7 @@ const captureAndShareImage = async () => {
   border-top-left-radius: var(--border-radius-3xl);
   border-top-right-radius: var(--border-radius-3xl);
   position: relative;
-  overflow: hidden; /* Keep the flag contained */
+  overflow: hidden;
 }
 
 /* Full opacity background flag */
@@ -498,7 +587,7 @@ const captureAndShareImage = async () => {
   height: 100%;
   background-size: cover;
   background-position: center;
-  opacity: 1; /* Full opacity */
+  opacity: 1;
   z-index: 1;
 }
 
@@ -506,8 +595,8 @@ const captureAndShareImage = async () => {
 .header-content {
   position: relative;
   z-index: 2;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5), 0 0 10px rgba(0, 0, 0, 0.5); /* Stronger shadow */
-  background-color: rgba(0, 0, 0, 0.3); /* Semi-transparent background */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5), 0 0 10px rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.3);
   display: inline-block;
   padding: var(--spacing-2) var(--spacing-6);
   border-radius: var(--border-radius-xl);
@@ -530,23 +619,24 @@ const captureAndShareImage = async () => {
 }
 
 /* User info row */
-.user-info-row, .keywords-mbti-row {
+.user-info-row,
+.keywords-mbti-row {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--spacing-3);
   margin-bottom: var(--spacing-2);
-  flex-wrap: wrap; /* Allows items to wrap to next line on small screens */
+  flex-wrap: wrap;
 }
 
 .username-tag {
   background-color: var(--color-primary-orange);
   color: var(--color-white);
-  padding: var(--spacing-2) var(--spacing-5); /* py-2 px-5 */
+  padding: var(--spacing-2) var(--spacing-5);
   border-radius: var(--border-radius-full);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
-  white-space: nowrap; /* Prevent line breaks */
+  white-space: nowrap;
 }
 
 .flag-tag {
@@ -566,59 +656,59 @@ const captureAndShareImage = async () => {
 }
 
 .country-code {
-  color: #999; 
-  font-size: 0.7em; 
+  color: #999;
+  font-size: 0.7em;
   margin-left: 2px;
 }
 
 .keywords-tag {
-  background-color: #E0F2F7; /* Keep the original color */
-  color: #00549E; /* Darker blue for better contrast */
+  background-color: #E0F2F7;
+  color: #00549E;
   padding: var(--spacing-2) var(--spacing-5);
   border-radius: var(--border-radius-full);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-bold);
   white-space: nowrap;
-  border: 1px solid #BFD3E1; /* Add subtle border */
+  border: 1px solid #BFD3E1;
 }
 
 .mbti-tag {
   background-color: var(--color-secondary-yellow);
-  color: #664400; /* Darker brown for better contrast on yellow */
+  color: #664400;
   padding: var(--spacing-2) var(--spacing-5);
   border-radius: var(--border-radius-full);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-extrabold);
   white-space: nowrap;
-  border: 1px solid rgba(0,0,0,0.1); /* Add subtle border */
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 /* Summary line - improved contrast */
 .summary-line {
-  color: #994400; /* Darker orange for better contrast */
+  color: #994400;
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   margin-top: var(--spacing-5);
   padding-bottom: var(--spacing-5);
-  border-bottom: 2px dashed #ffb366; /* Slightly darker orange for the dashed line */
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5); /* Subtle text shadow for better readability */
+  border-bottom: 2px dashed #ffb366;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 /* Main statistics grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)); /* grid-cols-2 */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--spacing-4);
   margin-top: var(--spacing-8);
 }
 
 .stat-box {
-  background-color: white; /* Change from gray-50 to white for better contrast */
+  background-color: white;
   border-radius: var(--border-radius-xl);
-  padding: var(--spacing-4); /* p-4 */
+  padding: var(--spacing-4);
   text-align: left;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.08); /* Slightly stronger shadow */
-  border: 1px solid rgba(0,0,0,0.05); /* Subtle border */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -633,14 +723,14 @@ const captureAndShareImage = async () => {
 }
 
 .stat-box.span-two-columns {
-  grid-column: span 2 / span 2; /* col-span-2 */
+  grid-column: span 2 / span 2;
 }
 
 .stat-title {
   display: block;
   font-size: var(--font-size-base);
   margin-bottom: var(--spacing-1);
-  color: #664400; /* Darker brown for better contrast against orange */
+  color: #664400;
   font-weight: var(--font-weight-bold);
 }
 
@@ -653,25 +743,27 @@ const captureAndShareImage = async () => {
 .stat-emoji {
   font-size: var(--font-size-3xl);
   margin-top: var(--spacing-2);
-  align-self: flex-end; /* self-end */
-  color: var(--color-gray-700); /* Default emoji color, adjust if needed */
+  align-self: flex-end;
+  color: var(--color-gray-700);
 }
 
 .stat-box.yellow-bg .stat-title,
 .stat-box.yellow-bg .stat-value,
 .stat-box.yellow-bg .stat-emoji {
-  color: var(--color-dark-gray); /* Ensure text/emoji color matches for yellow background */
+  color: var(--color-dark-gray);
 }
 
 /* Specific emoji color overrides for consistency with previous Tailwind */
-.stat-box:nth-child(2) .stat-emoji { /* Camera emoji */
-    color: #4B5563; /* A darker gray for contrast */
+.stat-box:nth-child(2) .stat-emoji {
+  color: #4B5563;
 }
-.stat-box:nth-child(3) .stat-emoji { /* Map emoji */
-    color: var(--color-blue-500);
+
+.stat-box:nth-child(3) .stat-emoji {
+  color: var(--color-blue-500);
 }
-.stat-box:nth-child(4) .stat-emoji { /* Clock emoji */
-    color: #6B7280; /* A medium gray */
+
+.stat-box:nth-child(4) .stat-emoji {
+  color: #6B7280;
 }
 
 
@@ -683,36 +775,38 @@ const captureAndShareImage = async () => {
 }
 
 .subject-icon-wrapper {
-  width: var(--spacing-10); /* w-10 */
-  height: var(--spacing-10); /* h-10 */
-  background-color: var(--color-gray-200); /* bg-gray-200 */
-  border-radius: var(--border-radius-lg); /* rounded-lg */
+  width: var(--spacing-10);
+  height: var(--spacing-10);
+  background-color: var(--color-gray-200);
+  border-radius: var(--border-radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--font-size-xl);
-  color: var(--color-medium-gray); /* text-gray-600 */
-  transition: transform 0.2s ease; /* Add animation */
+  color: var(--color-medium-gray);
+  transition: transform 0.2s ease;
 }
 
 .subject-icon-wrapper:hover {
-  transform: scale(1.1); /* Slightly enlarge on hover */
+  transform: scale(1.1);
 }
 
 /* Recommendation list */
 .recommendation-list {
-  list-style: none; /* Remove default bullet points */
+  list-style: none;
   padding: 0;
   margin: 0;
   font-size: var(--font-size-sm);
-  color: #333333; /* Keep dark gray for good contrast */
+  color: #333333;
   font-weight: var(--font-weight-bold);
   text-align: left;
-  line-height: 1.4; /* leading-tight */
+  line-height: 1.4;
 }
+
 .recommendation-list li {
   margin-bottom: 2px;
 }
+
 .recommendation-list li:last-child {
   margin-bottom: 0;
 }
@@ -721,7 +815,7 @@ const captureAndShareImage = async () => {
 .card-footer {
   margin-top: var(--spacing-8);
   padding-top: var(--spacing-5);
-  border-top: 2px dashed #ffb366; /* Match the summary-line border color */
+  border-top: 2px dashed #ffb366;
 }
 
 .trip-dates {
@@ -738,12 +832,20 @@ const captureAndShareImage = async () => {
   position: relative;
   display: inline-block;
   animation: pulse 2s infinite;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5); /* Add subtle text shadow */
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 </style>

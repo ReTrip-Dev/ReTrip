@@ -4,6 +4,7 @@ import LoginPage from "../components/LoginPage.vue";
 import SignUpForm from "../components/SignUpForm.vue";
 import Credential from "../components/Credential.vue";
 import Retrip from "../components/Retrip.vue";
+import RetripHistoryPage from "../components/RetripHistoryPage.vue";
 
 const routes = [
   {
@@ -30,6 +31,11 @@ const routes = [
     path: "/credential", // 회원 아이디, 비밀번호 찾기 페이지 경로
     name: "credential",
     component: Credential, // Credential 컴포넌트 연결
+  },
+  {
+    path: "/history", // 리트립 히스토리 페이지 경로
+    name: "RetripHistoryPage",
+    component: RetripHistoryPage, // RetripHistoryPage 컴포넌트 연결
   }
 ];
 
