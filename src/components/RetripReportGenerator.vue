@@ -2,11 +2,11 @@
     <div class="photo-upload-page">
         <header class="header">
             <div class="logo-area">
-                <a href="/photo">
+                <a href="/">
                     <img src="/src/assets/logo(1).png" alt="ReTrip Logo" class="retrip-logo-icon">
                 </a>
             </div>
-            <a href="/history" class="nav-link">히스토리</a>
+            <!-- 히스토리 기능 연결 <a href="/history" class="nav-link">히스토리</a> -->
         </header>
 
         <div class="container">
