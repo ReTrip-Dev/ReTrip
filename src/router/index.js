@@ -8,7 +8,12 @@ import RetripHistoryPage from "../components/RetripHistoryPage.vue";
 
 const routes = [
   {
-    path: "/", // 루트 경로 (예: http://localhost:8080/)
+    path: "/", // 사진 업로드 페이지 경로
+    name: "photo",
+    component: RetripReportGenerator, // RetripReportGenerator 컴포넌트 연결
+  },
+  {
+    path: "/login", // 루트 경로 (예: http://localhost:8080/)
     name: "Login",
     component: LoginPage, // 이 경로로 접속하면 LoginPage 컴포넌트가 렌더링됩니다.
   },
@@ -18,14 +23,9 @@ const routes = [
     component: SignUpForm, // SignUpForm 컴포넌트 연결
   },
   {
-    path: "/photo", // 사진 업로드 페이지 경로
-    name: "photo",
-    component: RetripReportGenerator, // RetripReportGenerator 컴포넌트 연결
-  },
-  {
-    path: "/retrip", // 사진 업로드 페이지 경로
+    path: "/retrip", // retrip 확인 페이지 경로
     name: "retrip",
-    component: Retrip, // RetripReportGenerator 컴포넌트 연결
+    component: Retrip, // Retrip 컴포넌트 연결
   },
   {
     path: "/credential", // 회원 아이디, 비밀번호 찾기 페이지 경로

@@ -2,7 +2,7 @@
     <div class="retrip-history-page">
         <header class="rhp-header">
             <div class="rhp-logo-area">
-                <a href="/photo">
+                <a href="/">
                     <img src="/src/assets/logo(1).png" alt="ReTrip Logo" class="rhp-retrip-logo-icon">
                 </a>
             </div>
@@ -31,7 +31,7 @@
                 <i class="fas fa-images rhp-no-history-icon"></i>
                 <p><strong>아직 저장된 리트립 이미지가 없습니다.</strong></p>
                 <p>새로운 리트립을 추가하여 추억을 만들어보세요!</p>
-                <router-link to="/photo" class="rhp-add-retrip-button">리트립 만들러 가기</router-link>
+                <router-link to="/" class="rhp-add-retrip-button">리트립 만들러 가기</router-link>
             </div>
 
             <div v-else class="rhp-image-grid">
