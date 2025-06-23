@@ -12,7 +12,7 @@ const routes = [
     name: "photo",
     component: RetripReportGenerator, // RetripReportGenerator 컴포넌트 연결
   },
-    {
+  {
     path: "/retrip", // retrip 확인 페이지 경로
     name: "retrip",
     component: Retrip, // Retrip 컴포넌트 연결
