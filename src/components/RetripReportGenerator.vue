@@ -101,7 +101,7 @@
             </div>
         </div>
 
-        <p class="subtle-text-element">© 2024 ReTrip. All rights reserved. Made with ❤️ and AI.</p>
+        <p class="subtle-text-element">© 2025 ReTrip. All rights reserved. Made with YB and IW.</p>
     </div>
 </template>
 
