@@ -106,7 +106,7 @@
 </template>
 
 <script>
-import axios from 'axios'; // Import axios
+import axios from 'axios';
 
 export default {
     name: 'PhotoUpload',
@@ -114,7 +114,7 @@ export default {
         return {
             uploadedFiles: [],
             maxFiles: 20,
-            minFiles: 5, // Minimum number of files required
+            minFiles: 5,
             isDraggingOver: false,
             isGenerating: false,
         };
@@ -202,7 +202,8 @@ export default {
             });
 
             try {
-                const response = await axios.post('http://localhost:8080/api/images/uploads', formData, {
+                const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/images/uploads`;
+                const response = await axios.post(apiUrl, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }
