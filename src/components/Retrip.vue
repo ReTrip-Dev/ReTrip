@@ -174,8 +174,9 @@ const saveReportImage = async (retripId) => {
         }
 
         try {
-          console.log(`이미지를 백엔드에 업로드 중: http://localhost:8080/api/images/retrip (retripId: ${retripId})`);
-          const response = await fetch('http://localhost:8080/api/images/retrip', {
+          const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/images/retrip`;
+          console.log(`이미지를 백엔드에 업로드 중: ${apiUrl} (retripId: ${retripId})`);
+          const response = await fetch(apiUrl, {
             method: 'POST',
             body: formData,
           });
