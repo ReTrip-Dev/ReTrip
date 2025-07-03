@@ -4,5 +4,13 @@
             "source": "/((?!api|/_next/static|/_next/image|/favicon.ico).*)",
             "destination": "/index.html"
         }
+    ],
+    "headers": [
+        {
+            "source": "/fonts/(.*)",
+            "headers": [
+            { "key": "Access-Control-Allow-Origin", "value": "*" }
+    ]
+        }
     ]
 }
