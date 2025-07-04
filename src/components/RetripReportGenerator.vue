@@ -1,12 +1,58 @@
 <template>
     <div class="photo-upload-page">
+        <div v-if="isGenerating" class="loading-overlay">
+            <div class="loading-container">
+                <div class="sky">
+                    <!-- Plane SVG -->
+                    <svg class="plane" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g>
+                            <!-- Body -->
+                            <path d="M110 25 C 105 22, 35 22, 30 25 L 30 35 C 35 38, 105 38, 110 35 Z" fill="#FFFFFF"
+                                stroke="#666666" stroke-width="1.5" />
+                            <!-- Wing -->
+                            <path d="M75 25 L 55 15 L 45 15 L 65 25 Z" fill="#FFFFFF" stroke="#666666"
+                                stroke-width="1.5" />
+                            <!-- Tail -->
+                            <path d="M30 30 L 5 20 L 5 40 L 30 30 Z" fill="#FFFFFF" stroke="#666666"
+                                stroke-width="1.5" />
+                            <!-- Tail Fin -->
+                            <path d="M25 25 L 15 15 L 10 15 L 20 25 Z" fill="#FF5D00" stroke="#FF5D00" stroke-width="1" />
+                            <!-- Windows -->
+                            <circle cx="95" cy="30" r="2.5" fill="#BDE4FF" />
+                            <circle cx="80" cy="30" r="2.5" fill="#BDE4FF" />
+                            <circle cx="65" cy="30" r="2.5" fill="#BDE4FF" />
+                            <circle cx="50" cy="30" r="2.5" fill="#BDE4FF" />
+                        </g>
+                    </svg>
+                    <!-- Clouds SVG -->
+                    <svg class="cloud c1" viewBox="0 0 80 40">
+                        <ellipse cx="20" cy="30" rx="20" ry="10" fill="#fff" />
+                        <ellipse cx="50" cy="25" rx="18" ry="12" fill="#fff" />
+                        <ellipse cx="65" cy="35" rx="15" ry="8" fill="#fff" />
+                    </svg>
+                    <svg class="cloud c2" viewBox="0 0 120 50">
+                        <ellipse cx="40" cy="40" rx="30" ry="12" fill="#fff" />
+                        <ellipse cx="80" cy="30" rx="25" ry="15" fill="#fff" />
+                        <ellipse cx="100" cy="45" rx="18" ry="8" fill="#fff" />
+                    </svg>
+                    <svg class="cloud c3" viewBox="0 0 60 30">
+                        <ellipse cx="20" cy="20" rx="15" ry="7" fill="#fff" />
+                        <ellipse cx="45" cy="15" rx="12" ry="8" fill="#fff" />
+                    </svg>
+                </div>
+                <div class="loading-text">
+                    <strong>여행 사진 리포트</strong> 생성 중
+                    <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+                </div>
+            </div>
+        </div>
+
         <header class="header">
             <div class="logo-area">
                 <a href="/">
                     <img src="/src/assets/logo(1).png" alt="ReTrip Logo" class="retrip-logo-icon">
                 </a>
             </div>
-            <!-- 히스토리 기능 연결 <a href="/history" class="nav-link">히스토리</a> -->
         </header>
 
         <div class="container">
@@ -211,12 +257,11 @@ export default {
 
                 console.log('Report generation successful, server response:', response.data);
 
-                // Navigate to Retrip.vue with the response data in history.state
-                this.$router.push({
-                    name: 'retrip', // Use route name for clarity if available
-                    // path: '/retrip', // Or path
-                    state: { reportData: response.data } // Pass data in history.state
-                });
+                // Store report data in localStorage
+                localStorage.setItem('reportData', JSON.stringify(response.data));
+
+                // Navigate to the report page
+                this.$router.push({ name: 'retrip' });
                 
                 this.resetUploadArea();
 
@@ -257,7 +302,9 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700&display=swap');
+
 /*
     주의: 아래 CSS 코드는 photo.html에서 복사한 것이므로,
     Vue.js 프로젝트의 전역 스타일(예: index.css, main.css)과 중복될 수 있습니다.
@@ -1301,11 +1348,180 @@ body {
 
     /* 이미지 개수에 따라 추가 또는 조정 */
 }
+</style>
 
+<style scoped>
 .photo-upload-page {
     padding-top: 65px;
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+/* 로딩 오버레이 스타일 */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    text-align: center;
+    color: var(--dark-gray);
+    overflow: hidden;
+    /* Background 및 Font 설정은 loading-container로 이동 */
+}
+
+/* Loading Container Styles */
+.loading-container {
+    background: linear-gradient(180deg, #FDD8B1 0%, #BDE4FF 100%);
+    font-family: 'Noto Sans KR', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+}
+
+/* Loading Animation Styles - Encapsulated */
+.loading-container .sky {
+    position: relative;
+    width: 100vw;
+    max-width: 600px;
+    height: 200px;
+    overflow: visible;
+}
+
+.loading-container .plane {
+    position: absolute;
+    left: -120px;
+    top: 60px;
+    width: 120px;
+    height: 60px;
+    z-index: 2;
+    animation: fly 5s cubic-bezier(.6, .01, .4, 1) infinite;
+    /* 속도 조절: 3.5s -> 5s */
+    filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.15));
+    /* Add shadow for depth */
+    transform: scaleX(1);
+    /* 비행기 방향 원복 */
+}
+
+/* Keyframes for the plane animation */
+@keyframes fly {
+    0% {
+        left: -120px;
+        top: 60px;
+        transform: scale(1) rotate(-8deg);
+        opacity: 0.7;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    50% {
+        left: 60vw;
+        top: 10px;
+        transform: scale(1.08) rotate(3deg);
+        opacity: 1;
+    }
+
+    80% {
+        opacity: 1;
+    }
+
+    100% {
+        left: 100vw;
+        top: 80px;
+        transform: scale(1) rotate(-8deg);
+        opacity: 0.7;
+    }
+}
+
+.loading-container .cloud {
+    position: absolute;
+    bottom: 0;
+    opacity: 0.7;
+    animation: cloud-move 18s linear infinite;
+}
+
+.loading-container .cloud.c1 {
+    left: 10vw;
+    width: 80px;
+    animation-delay: 0s;
+}
+
+.loading-container .cloud.c2 {
+    left: 40vw;
+    width: 120px;
+    animation-delay: 4s;
+}
+
+.loading-container .cloud.c3 {
+    left: 70vw;
+    width: 60px;
+    animation-delay: 8s;
+}
+
+@keyframes cloud-move {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-120vw);
+    }
+}
+
+.loading-container .loading-text {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #333333;
+    /* Darker text for readability */
+    letter-spacing: 1px;
+    text-align: center;
+    margin-top: 20px;
+    text-shadow: 0 2px 8px #fff8;
+}
+
+.loading-container .loading-text strong {
+    color: var(--primary-orange);
+    /* Accent color from photo.html */
+}
+
+.loading-container .dot {
+    display: inline-block;
+    width: 0.8em;
+    animation: blink 1.4s infinite both;
+    color: var(--primary-orange);
+    /* Accent color for dots */
+}
+
+.loading-container .dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loading-container .dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes blink {
+
+    0%,
+    80%,
+    100% {
+        opacity: 0;
+    }
+
+    40% {
+        opacity: 1;
+    }
 }
 </style>
