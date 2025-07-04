@@ -6,7 +6,6 @@
           <img src="/src/assets/logo(1).png" alt="ReTrip Logo" class="retrip-logo-icon">
         </a>
       </div>
-      <!-- 히스토리 기능 <a href="/history" class="nav-link">히스토리</a> -->
     </header>
 
     <div class="travel-summary-card" ref="travelSummaryCard">
@@ -136,104 +135,16 @@ const headerFlagStyle = computed(() => {
   };
 });
 
-/**
- * HTML 요소를 캡처하여 Blob 형태로 변환 후 백엔드로 전송합니다.
- * @param {string} retripId - 현재 여행 리포트의 고유 ID (백엔드에서 이미지와 리포트 연결용)
- */
-const saveReportImage = async (retripId) => {
-  if (!travelSummaryCard.value) {
-    console.error("여행 요약 카드를 찾을 수 없습니다. HTML 요소가 아직 렌더링되지 않았을 수 있습니다.");
-    alert("이미지 캡처 준비 실패: 카드 요소를 찾을 수 없습니다.");
-    return;
-  }
-
-  if (!retripId) {
-    console.error("retripId가 제공되지 않았습니다. 이미지를 저장할 리포트를 식별할 수 없습니다.");
-    alert("이미지 저장 실패: 리포트 ID가 없습니다.");
-    return;
-  }
-
-  try {
-    const canvas = await html2canvas(travelSummaryCard.value, {
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: null,
-      scale: 2,
-    });
-
-    canvas.toBlob(async (blob) => {
-      if (blob) {
-        const formData = new FormData();
-        const fileName = `retrip-summary-${retripId}.png`;
-        formData.append('image', blob, fileName);
-        formData.append('retripId', retripId);
-
-        console.log('FormData 준비 완료. 내용 확인:');
-        for (let pair of formData.entries()) {
-          console.log(pair[0] + ': ' + pair[1]);
-        }
-
-        try {
-          const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/images/retrip`;
-          console.log(`이미지를 백엔드에 업로드 중: ${apiUrl} (retripId: ${retripId})`);
-          const response = await fetch(apiUrl, {
-            method: 'POST',
-            body: formData,
-          });
-
-          if (response.ok) { // HTTP 상태 코드가 200번대인 경우
-            // 백엔드에서 "success" 문자열을 반환하므로, .text()로 응답을 받습니다.
-            const resultText = await response.text();
-            console.log('이미지 S3 업로드 응답:', resultText);
-
-            // "success" 문자열인지 확인하여 성공 메시지 표시
-            if (resultText === "success") {
-              alert('여행 리포트 이미지가 성공적으로 저장되었습니다!');
-            } else {
-              // "success"가 아닌 다른 문자열이 왔을 경우
-              console.error('이미지 S3 업로드 성공 응답이지만, 예상치 못한 문자열 반환:', resultText);
-              alert(`이미지 업로드 성공: 예상치 못한 서버 응답 - ${resultText}`);
-            }
-
-          } else { // HTTP 상태 코드가 200번대가 아닌 경우 (예: 400, 500)
-            const errorText = await response.text(); // 에러 응답 본문도 텍스트로 가져옴
-            console.error(`이미지 S3 업로드 실패: 상태 ${response.status}, 상태 메시지: ${response.statusText}, 응답 본문: ${errorText}`);
-            alert(`이미지 업로드 실패: ${response.status} - ${errorText}`);
-          }
-        } catch (fetchError) {
-          // 네트워크 오류, CORS 차단 등 Fetch 자체의 실패 시
-          console.error('이미지 업로드 중 네트워크 또는 서버 통신 에러:', fetchError);
-          alert('이미지 업로드 중 네트워크 오류가 발생했습니다. 개발자 콘솔을 확인해주세요.');
-        }
-      } else {
-        console.error('Blob 생성 실패: canvas.toBlob()이 실패했습니다.');
-        alert('이미지 생성에 실패했습니다. 카드 내용이 제대로 렌더링되었는지 확인해주세요.');
-      }
-    }, 'image/png');
-
-  } catch (canvasError) {
-    console.error('이미지 캡처 중 에러:', canvasError);
-    alert('이미지 캡처에 실패했습니다. 브라우저 콘솔을 확인해주세요.');
-  }
-};
-
 onMounted(async () => {
-  let currentRetripId = null;
+  const reportDataString = localStorage.getItem('reportData');
 
-  if (history.state && history.state.reportData) {
+  if (reportDataString) {
     try {
-      const receivedData = history.state.reportData;
-      console.log('Retrip.vue: history.state로부터 받은 원본 데이터:', receivedData);
+      const receivedData = JSON.parse(reportDataString);
+      console.log('Retrip.vue: localStorage로부터 받은 원본 데이터:', receivedData);
 
-      if (receivedData.retripId) {
-        currentRetripId = receivedData.retripId;
-      } else if (receivedData.reportId) {
-        console.warn('Retrip.vue: reportId 필드가 사용되었습니다. 백엔드에서 retripId를 사용하도록 업데이트하세요.');
-        currentRetripId = receivedData.reportId;
-      } else if (receivedData.tripSummary && receivedData.tripSummary.reportId) {
-        console.warn('Retrip.vue: tripSummary.reportId 필드가 사용되었습니다. 백엔드에서 retripId를 사용하도록 업데이트하세요.');
-        currentRetripId = receivedData.tripSummary.reportId;
-      }
+      // Clean up localStorage after reading the data
+      localStorage.removeItem('reportData');
 
       // userData 업데이트 로직은 기존과 동일
       if (receivedData.user) {
@@ -265,23 +176,15 @@ onMounted(async () => {
       }
 
       console.log('Retrip.vue: 처리된 reportData:', userData);
-      console.log('Retrip.vue: 추출된 retripId:', currentRetripId);
 
       await nextTick();
-      if (currentRetripId) {
-        console.log('Retrip.vue: retripId가 있어 이미지 저장 시도:', currentRetripId);
-        await saveReportImage(currentRetripId);
-      } else {
-        console.warn('Retrip.vue: retripId를 찾을 수 없어 Retrip 결과 이미지를 자동으로 저장하지 않습니다.');
-        alert('리포트 ID를 찾을 수 없어 이미지를 자동으로 저장하지 못했습니다.');
-      }
 
     } catch (error) {
-      console.error('Retrip.vue: history.state에서 리포트 데이터 처리 중 에러 발생:', error);
+      console.error('Retrip.vue: localStorage에서 리포트 데이터 처리 중 에러 발생:', error);
       alert('여행 리포트 데이터를 불러오는 데 실패했습니다.');
     }
   } else {
-    console.log('Retrip.vue: history.state에 reportData가 없어 기본 데이터를 사용합니다.');
+    console.log('Retrip.vue: localStorage에 reportData가 없어 기본 데이터를 사용합니다.');
     alert('이전 페이지에서 전달된 리포트 데이터가 없습니다. 기본 데이터를 표시합니다.');
   }
 });
