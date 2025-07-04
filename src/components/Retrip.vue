@@ -30,6 +30,17 @@
             {{ userData.mbti }}
           </span>
         </div>
+        <div class="egen-teto-row">
+          <span class="egen-type-tag">
+            {{ userData.egenType }}
+          </span>
+          <span class="egen-subtype-tag">
+            {{ userData.egenSubtype }}
+          </span>
+          <span class="egen-hashtag-tag">
+            {{ userData.egenHashtag }}
+          </span>
+        </div>
         <div class="summary-line">
           {{ userData.summaryLine }}
         </div>
@@ -102,6 +113,9 @@ const userData = reactive({
   countryCode: 'KR',
   travelKeywords: ['#여행'],
   mbti: '#ISTJ',
+  egenType: '알 수 없음',
+  egenSubtype: '알 수 없음',
+  egenHashtag: '#에겐',
   summaryLine: '멋진 여행이었어요!',
   favoriteSubjects: ['🏞️', '🍲', '🏙️'],
   favoritePhotoSpot: '알 수 없음',
@@ -151,6 +165,11 @@ onMounted(async () => {
         userData.username = receivedData.user.username || userData.username;
         userData.countryCode = receivedData.user.countryCode || userData.countryCode;
         userData.mbti = receivedData.user.mbti ? (receivedData.user.mbti.startsWith('#') ? receivedData.user.mbti : `#${receivedData.user.mbti}`) : userData.mbti;
+        if (receivedData.user.egenTeto) {
+          userData.egenType = receivedData.user.egenTeto.type || userData.egenType;
+          userData.egenSubtype = receivedData.user.egenTeto.subtype || userData.egenSubtype;
+          userData.egenHashtag = receivedData.user.egenTeto.hashtag || userData.egenHashtag;
+        }
       }
 
       if (receivedData.tripSummary) {
@@ -278,41 +297,41 @@ const captureAndShareImage = async () => {
   /* Approximate for Tailwind's blue-500 */
 
   /* Spacing */
-  --spacing-1: 4px;
-  --spacing-2: 8px;
-  --spacing-3: 12px;
-  --spacing-4: 16px;
-  --spacing-5: 20px;
-  --spacing-6: 24px;
-  --spacing-8: 32px;
-  --spacing-10: 40px;
-  --spacing-12: 48px;
-  --spacing-16: 64px;
+  --spacing-1: 2px;
+  --spacing-2: 4px;
+  --spacing-3: 8px;
+  --spacing-4: 12px;
+  --spacing-5: 14px;
+  --spacing-6: 18px;
+  --spacing-8: 24px;
+  --spacing-10: 30px;
+  --spacing-12: 36px;
+  --spacing-16: 48px;
 
   /* Border Radii */
-  --border-radius-sm: 4px;
-  --border-radius-md: 8px;
-  --border-radius-lg: 12px;
-  --border-radius-xl: 16px;
-  --border-radius-2xl: 20px;
-  --border-radius-3xl: 24px;
+  --border-radius-sm: 3px;
+  --border-radius-md: 6px;
+  --border-radius-lg: 10px;
+  --border-radius-xl: 14px;
+  --border-radius-2xl: 18px;
+  --border-radius-3xl: 22px;
   --border-radius-full: 9999px;
 
   /* Font Sizes */
-  --font-size-xs: 0.75rem;
+  --font-size-xs: 0.65rem;
+  /* 10.4px */
+  --font-size-sm: 0.75rem;
   /* 12px */
-  --font-size-sm: 0.875rem;
-  /* 14px */
-  --font-size-base: 1rem;
-  /* 16px */
-  --font-size-lg: 1.125rem;
-  /* 18px */
-  --font-size-xl: 1.25rem;
-  /* 20px */
-  --font-size-2xl: 1.5rem;
+  --font-size-base: 0.85rem;
+  /* 13.6px */
+  --font-size-lg: 0.95rem;
+  /* 15.2px */
+  --font-size-xl: 1.05rem;
+  /* 16.8px */
+  --font-size-2xl: 1.2rem;
+  /* 19.2px */
+  --font-size-3xl: 1.5rem;
   /* 24px */
-  --font-size-3xl: 1.875rem;
-  /* 30px */
 
   /* Font Weights */
   --font-weight-normal: 400;
@@ -329,12 +348,14 @@ const captureAndShareImage = async () => {
   /* Ensure header and card are stacked */
   align-items: center;
   /* Center the card horizontally */
+  justify-content: center;
+  /* Center the card vertically */
   min-height: 100vh;
   /* full height */
   background-color: var(--color-background-light);
   padding: var(--spacing-5);
-  padding-top: 85px;
-  /* Added padding for fixed header (65px header + 20px original padding) */
+  padding-top: 100px;
+  /* Match padding-bottom for vertical balance */
   /* Add padding-bottom to make space for action buttons */
   padding-bottom: 100px;
   /* Adjust as needed */
@@ -458,21 +479,21 @@ const captureAndShareImage = async () => {
 /* Main card container */
 .travel-summary-card {
   width: 100%;
-  max-width: 448px;
+  max-width: 400px;
   background-color: var(--color-white);
   border-radius: var(--border-radius-3xl);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   text-align: center;
   position: relative;
-  padding-bottom: var(--spacing-8);
+  padding-bottom: var(--spacing-6);
 }
 
 /* Header section with "여행 Recap" */
 .card-header {
   background-color: transparent;
-  padding-top: var(--spacing-8);
-  padding-bottom: var(--spacing-16);
+  padding-top: var(--spacing-6);
+  padding-bottom: var(--spacing-12);
   color: var(--color-white);
   font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-extrabold);
@@ -509,14 +530,14 @@ const captureAndShareImage = async () => {
 /* Profile and main summary section with updated text contrast */
 .profile-summary-section {
   background-color: #ffe6cc;
-  padding-top: var(--spacing-10);
+  padding-top: var(--spacing-8);
   padding-left: var(--spacing-6);
   padding-right: var(--spacing-6);
   padding-bottom: var(--spacing-6);
   border-radius: var(--border-radius-2xl);
   margin-left: var(--spacing-4);
   margin-right: var(--spacing-4);
-  margin-top: calc(-1 * var(--spacing-12));
+  margin-top: calc(-1 * var(--spacing-10));
   position: relative;
   z-index: 10;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -530,6 +551,15 @@ const captureAndShareImage = async () => {
   justify-content: center;
   gap: var(--spacing-3);
   margin-bottom: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.egen-teto-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-3);
   flex-wrap: wrap;
 }
 
@@ -587,13 +617,46 @@ const captureAndShareImage = async () => {
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
+.egen-subtype-tag {
+  background-color: #d1fae5; /* Tailwind green-100 */
+  color: #065f46; /* Tailwind green-800 */
+  padding: var(--spacing-2) var(--spacing-5);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+  border: 1px solid #a7f3d0; /* Tailwind green-200 */
+}
+
+.egen-hashtag-tag {
+  background-color: #e0e7ff; /* Tailwind indigo-100 */
+  color: #3730a3; /* Tailwind indigo-800 */
+  padding: var(--spacing-2) var(--spacing-5);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+  border: 1px solid #c7d2fe; /* Tailwind indigo-200 */
+}
+
+.egen-type-tag {
+  background-color: #f3e8ff; /* Tailwind purple-100 */
+  color: #581c87; /* Tailwind purple-800 */
+  padding: var(--spacing-2) var(--spacing-5);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+  border: 1px solid #e9d5ff; /* Tailwind purple-200 */
+}
+
 /* Summary line - improved contrast */
 .summary-line {
   color: #994400;
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
-  margin-top: var(--spacing-5);
-  padding-bottom: var(--spacing-5);
+  margin-top: var(--spacing-4);
+  padding-bottom: var(--spacing-4);
   border-bottom: 2px dashed #ffb366;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
@@ -602,8 +665,8 @@ const captureAndShareImage = async () => {
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--spacing-4);
-  margin-top: var(--spacing-8);
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-6);
 }
 
 .stat-box {
@@ -616,7 +679,7 @@ const captureAndShareImage = async () => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 120px;
+  min-height: 90px;
 }
 
 .stat-box.yellow-bg {
@@ -717,8 +780,8 @@ const captureAndShareImage = async () => {
 
 /* Date and Hashtag Footer */
 .card-footer {
-  margin-top: var(--spacing-8);
-  padding-top: var(--spacing-5);
+  margin-top: var(--spacing-6);
+  padding-top: var(--spacing-4);
   border-top: 2px dashed #ffb366;
 }
 
@@ -732,7 +795,7 @@ const captureAndShareImage = async () => {
   color: var(--color-primary-orange);
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-extrabold);
-  margin-top: var(--spacing-2);
+  margin-top: var(--spacing-1);
   position: relative;
   display: inline-block;
   animation: pulse 2s infinite;
