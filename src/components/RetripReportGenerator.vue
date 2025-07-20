@@ -57,8 +57,8 @@
 
         <div class="container">
             <h1 class="main-title">
-                뚝딱! <strong>여행 리포트</strong> 만들기! <br>
-                소중한 추억을 특별하게 기록해요
+                당신은 여행스타일은 <strong>에겐</strong>? <strong>테토</strong>?<br>
+                AI가 분석하는 나만의 여행 리포트
             </h1>
 
             <div class="upload-area" id="uploadArea" @click="triggerFileInput" @dragover.prevent="handleDragOver"
@@ -68,7 +68,11 @@
 
                 <div class="default-content" v-if="uploadedFiles.length === 0">
                     <div class="icon-wrapper">
-                        <span class="material-icons">cloud_upload</span>
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L3 7L12 12L21 7L12 2Z" stroke="#FF8F40" stroke-width="2" stroke-linejoin="round"/>
+                            <path d="M3 17L12 22L21 17" stroke="#FF8F40" stroke-width="2" stroke-linejoin="round"/>
+                            <path d="M3 12L12 17L21 12" stroke="#FF8F40" stroke-width="2" stroke-linejoin="round"/>
+                        </svg>
                     </div>
                     <p class="upload-text">사진을 끌어다 놓거나 클릭하여 추가해보세요!</p>
                     <p class="upload-hint">(최대 10장, JPG/PNG 형식)</p>
@@ -98,49 +102,67 @@
                 <i class="fas fa-spinner spinner" v-if="isGenerating"></i>
             </button>
 
+            <div class="location-guide-section">
+                <button @click="showLocationGuide = !showLocationGuide" class="guide-toggle-btn">
+                    📍 더 정확한 분석을 위한 팁 {{ showLocationGuide ? '접기' : '보기' }}
+                    <i :class="['fas', showLocationGuide ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
+                </button>
+                
+                <div v-show="showLocationGuide" class="guide-content">
+                    <div class="guide-intro">
+                        <h3>📍 위치태그 설정 가이드</h3>
+                        <p>사진에 위치 정보가 포함되어 있으면 더욱 정확한 여행 분석이 가능해요</p>
+                    </div>
+                    
+                    <div class="device-guides">
+                        <div class="guide-item">
+                            <h4>📱 아이폰 사용자</h4>
+                            <div class="gif-placeholder">
+                                <img src="/gifs/iphone-location-guide.gif" alt="아이폰 위치태그 설정">
+                            </div>
+                            <p class="guide-steps">설정 → 개인정보 보호 및 보안 → 위치 서비스 → 카메라</p>
+                        </div>
+                        
+                        <div class="guide-item">
+                            <h4>🤖 갤럭시 사용자</h4>
+                            <div class="gif-placeholder">
+                                <img src="/gifs/galaxy-location-guide.gif" alt="갤럭시 위치태그 설정">
+                            </div>
+                            <p class="guide-steps">카메라 앱 → 설정 → 위치 태그</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="results-preview-section">
                 <h2>어떤 여행 리포트를 얻을 수 있나요?</h2>
                 <div class="results-grid">
                     <div class="result-item">
-                        <div class="icon-wrapper"><i class="fas fa-chart-pie"></i></div>
+                        <div class="icon-wrapper">🧭</div>
                         <div class="text-content">
-                            <h3>여행 무드 분석</h3>
-                            <p>AI가 분석한 이번 여행의 핵심 분위기를 한눈에!</p>
+                            <h3>당신만의 여행 DNA 발견!</h3>
+                            <p>MBTI 여행 성향과 에겐/테토 스타일로 나만의 여행 정체성을 찾아보세요</p>
                         </div>
                     </div>
                     <div class="result-item">
-                        <div class="icon-wrapper"><i class="fas fa-camera-retro"></i></div>
+                        <div class="icon-wrapper">📸</div>
                         <div class="text-content">
-                            <h3>피사체 TOP 3</h3>
-                            <p>가장 많이 담은 풍경, 음식, 인물 등 테마별 분석.</p>
+                            <h3>숨겨진 여행 취향 분석</h3>
+                            <p>가장 많이 찍은 피사체와 촬영 장소로 당신의 숨겨진 여행 스타일을 발견하세요</p>
                         </div>
                     </div>
                     <div class="result-item">
-                        <div class="icon-wrapper"><i class="fas fa-route"></i></div>
+                        <div class="icon-wrapper">🎯</div>
                         <div class="text-content">
-                            <h3>총 이동 거리 & 경로</h3>
-                            <p>이번 여행에서 이동한 총 거리와 경로를 시각화.</p>
+                            <h3>다음 여행지는 여기!</h3>
+                            <p>사진의 위치 기반으로 이번에 방문하지 않았다면 다음에 방문할만 한 여행지 곳 5곳을 추천해드려요</p>
                         </div>
                     </div>
                     <div class="result-item">
-                        <div class="icon-wrapper"><i class="fas fa-clock"></i></div>
+                        <div class="icon-wrapper">✨</div>
                         <div class="text-content">
-                            <h3>사진 촬영 시간대 분석</h3>
-                            <p>어떤 시간대에 주로 사진을 찍었는지 알려드려요.</p>
-                        </div>
-                    </div>
-                    <div class="result-item">
-                        <div class="icon-wrapper"><i class="fas fa-map-marker-alt"></i></div>
-                        <div class="text-content">
-                            <h3>가장 많이 찍은 장소 TOP 5</h3>
-                            <p>여행 중 가장 기억에 남는 장소들을 순위로 확인!</p>
-                        </div>
-                    </div>
-                    <div class="result-item">
-                        <div class="icon-wrapper"><i class="fas fa-plane"></i></div>
-                        <div class="text-content">
-                            <h3>AI 추천 다음 여행지</h3>
-                            <p>당신의 취향을 분석하여 다음 여행지를 추천합니다.</p>
+                            <h3>이번 여행을 한 마디로?</h3>
+                            <p>20자로 압축한 여행 요약과 당신만의 여행 해시태그를 만들어드려요</p>
                         </div>
                     </div>
                 </div>
@@ -163,6 +185,7 @@ export default {
             minFiles: 5,
             isDraggingOver: false,
             isGenerating: false,
+            showLocationGuide: false,
         };
     },
     methods: {
@@ -997,6 +1020,137 @@ body {
 }
 
 
+/* 위치 가이드 섹션 */
+.location-guide-section {
+    background: linear-gradient(135deg, #FFF8F0 0%, #F0F8FF 100%);
+    border-radius: var(--border-radius-card);
+    border: 1px solid var(--pale-orange);
+    margin: 30px 0;
+    overflow: hidden;
+    animation: fadeIn 1s ease-out 0.5s backwards;
+}
+
+.guide-toggle-btn {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 20px 24px;
+    text-align: left;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--primary-orange);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+.guide-toggle-btn:hover {
+    background-color: rgba(255, 93, 0, 0.05);
+}
+
+.guide-toggle-btn i {
+    font-size: 0.9em;
+    transition: transform 0.3s ease;
+}
+
+.guide-content {
+    padding: 0 24px 24px 24px;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.guide-intro {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.guide-intro h3 {
+    font-size: 1.3em;
+    font-weight: 700;
+    color: var(--primary-orange);
+    margin-bottom: 8px;
+}
+
+.guide-intro p {
+    color: var(--medium-gray);
+    font-size: 1em;
+}
+
+.device-guides {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.guide-item {
+    background: var(--white);
+    border-radius: var(--border-radius-button);
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    text-align: center;
+}
+
+.guide-item h4 {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--dark-gray);
+    margin-bottom: 16px;
+}
+
+.gif-placeholder {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+.gif-placeholder img {
+    width: 100%;
+    max-width: 200px;
+    height: auto;
+    border-radius: var(--border-radius-button);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.gif-fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 40px 20px;
+    background-color: var(--off-white);
+    border-radius: var(--border-radius-button);
+    border: 2px dashed var(--light-border);
+}
+
+.gif-fallback i {
+    font-size: 2em;
+    color: var(--light-orange);
+}
+
+.gif-fallback p {
+    font-size: 0.9em;
+    color: var(--medium-gray);
+    margin: 0;
+}
+
+.guide-steps {
+    font-size: 0.9em;
+    color: var(--medium-gray);
+    line-height: 1.5;
+    margin: 0;
+}
+
 /* 결과 미리보기 섹션 */
 .results-preview-section {
     background-color: var(--white);
@@ -1277,6 +1431,57 @@ body {
 
     .uploaded-thumbnails-list li:hover img {
         transform: translateY(-8px) scale(1.1) !important;
+    }
+
+    .location-guide-section {
+        margin: 20px 0;
+    }
+
+    .guide-toggle-btn {
+        padding: 16px 20px;
+        font-size: 1em;
+    }
+
+    .guide-content {
+        padding: 0 20px 20px 20px;
+    }
+
+    .guide-intro h3 {
+        font-size: 1.2em;
+    }
+
+    .guide-intro p {
+        font-size: 0.9em;
+    }
+
+    .device-guides {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .guide-item {
+        padding: 16px;
+    }
+
+    .guide-item h4 {
+        font-size: 1em;
+        margin-bottom: 12px;
+    }
+
+    .gif-placeholder img {
+        max-width: 180px;
+    }
+
+    .gif-fallback {
+        padding: 30px 16px;
+    }
+
+    .gif-fallback i {
+        font-size: 1.8em;
+    }
+
+    .guide-steps {
+        font-size: 0.85em;
     }
 
     .results-preview-section {
