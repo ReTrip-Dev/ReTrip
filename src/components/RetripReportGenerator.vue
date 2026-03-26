@@ -220,7 +220,7 @@ export default {
                 this.uploadedFiles.splice(indexToRemove, 1);
             }
         },
-        async generateReport() { // Make the method async
+        async generateReport() {
             if (this.isGenerating) {
                 return;
             }
@@ -244,41 +244,118 @@ export default {
 
             const formData = new FormData();
             this.uploadedFiles.forEach(file => {
-                formData.append('images', file); // Key 'images' as expected by backend
+                formData.append('images', file);
             });
 
             try {
+                // ① 이미지 업로드 → jobId 즉시 반환
                 const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/images/uploads`;
-                const response = await axios.post(apiUrl, formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                });
+                const response = await axios.post(apiUrl, formData);
+                const jobId = response.data.jobId;
+                console.log('이미지 업로드 완료, jobId:', jobId);
 
-                console.log('Report generation successful, server response:', response.data);
-
-                // Store report data in localStorage
-                localStorage.setItem('reportData', JSON.stringify(response.data));
-
-                // Navigate to the report page
-                this.$router.push({ name: 'retrip' });
-                
-                this.resetUploadArea();
+                // ② SSE 연결하여 Lambda 처리 결과 실시간 대기
+                await this.waitForResult(jobId);
 
             } catch (error) {
+                this.isGenerating = false;
                 alert('여행 리포트 생성에 실패했습니다. 다시 시도해주세요.');
-                console.error('Error uploading images:', error);
+                console.error('Error:', error);
                 if (error.response) {
                     console.error('Error response data:', error.response.data);
                     console.error('Error response status:', error.response.status);
-                } else if (error.request) {
-                    console.error('Error request:', error.request);
-                } else {
-                    console.error('Error message:', error.message);
                 }
-            } finally {
-                this.isGenerating = false;
             }
+        },
+
+        /**
+         * SSE(Server-Sent Events)로 Lambda 처리 결과를 실시간 대기
+         * SSE 연결 실패 시 자동으로 폴링 fallback 전환
+         */
+        waitForResult(jobId) {
+            return new Promise((resolve, reject) => {
+                const sseUrl = `${import.meta.env.VITE_API_BASE_URL}/api/retrips/${jobId}/stream`;
+                const eventSource = new EventSource(sseUrl);
+
+                // SSE 타임아웃: 2분 후에도 결과 없으면 폴링 전환
+                const sseTimeout = setTimeout(() => {
+                    console.warn('SSE 타임아웃 (2분), 폴링으로 전환');
+                    eventSource.close();
+                    this.pollForResult(jobId).then(resolve).catch(reject);
+                }, 120000);
+
+                // SSE 'result' 이벤트 수신 → 결과 처리
+                eventSource.addEventListener('result', (event) => {
+                    clearTimeout(sseTimeout);
+                    eventSource.close();
+
+                    try {
+                        const reportData = JSON.parse(event.data);
+                        console.log('SSE로 결과 수신:', reportData);
+
+                        localStorage.setItem('reportData', JSON.stringify(reportData));
+                        this.$router.push({ name: 'retrip' });
+                        this.resetUploadArea();
+                        this.isGenerating = false;
+                        resolve();
+                    } catch (e) {
+                        this.isGenerating = false;
+                        reject(e);
+                    }
+                });
+
+                // SSE 연결 에러 → 폴링 fallback
+                eventSource.onerror = (error) => {
+                    clearTimeout(sseTimeout);
+                    eventSource.close();
+                    console.warn('SSE 연결 실패, 폴링으로 전환:', error);
+                    this.pollForResult(jobId).then(resolve).catch(reject);
+                };
+            });
+        },
+
+        /**
+         * SSE 불가 시 폴링으로 결과 조회
+         * 3초 간격, 최대 40회 (약 2분)
+         */
+        async pollForResult(jobId) {
+            const statusUrl = `${import.meta.env.VITE_API_BASE_URL}/api/retrips/${jobId}/status`;
+            const maxRetries = 40;
+            const intervalMs = 3000;
+
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await axios.get(statusUrl);
+                    const { status, result, errorMessage } = response.data;
+
+                    if (status === 'COMPLETED' && result) {
+                        console.log('폴링으로 결과 수신:', result);
+                        localStorage.setItem('reportData', JSON.stringify(result));
+                        this.$router.push({ name: 'retrip' });
+                        this.resetUploadArea();
+                        this.isGenerating = false;
+                        return;
+                    }
+
+                    if (status === 'FAILED') {
+                        this.isGenerating = false;
+                        throw new Error(errorMessage || '리포트 생성에 실패했습니다.');
+                    }
+
+                    // PROCESSING 상태 → 3초 후 재시도
+                    await new Promise(r => setTimeout(r, intervalMs));
+                } catch (error) {
+                    if (error.message && error.message.includes('리포트 생성에 실패')) {
+                        throw error;
+                    }
+                    // 네트워크 에러 시 재시도 계속
+                    console.warn(`폴링 재시도 (${i + 1}/${maxRetries}):`, error.message);
+                    await new Promise(r => setTimeout(r, intervalMs));
+                }
+            }
+
+            this.isGenerating = false;
+            throw new Error('리포트 생성 시간이 초과되었습니다. (2분)');
         },
         resetUploadArea() {
             // Revoke all existing object URLs before clearing the array
